@@ -22,7 +22,7 @@
  "not_configured": "Not configured",
  "please_configure": "Please configure the card in the editor",
  "additional_settings": "Additional Settings",
- "cooking_time_label": "Cooking Time",
+ "cooking_time_label": "Total cooking time",
  "total_time": "Total Time",
  "hours": "h",
  "minutes": "m",
