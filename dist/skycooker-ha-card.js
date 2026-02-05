@@ -83,30 +83,43 @@ class SubscribeMixin extends s {
     constructor() {
         super(...arguments);
         this._unsubscribeFuncs = [];
+        this._setupVersion = 0;
     }
     hassSubscribe() {
         return [];
     }
-    async connectedCallback() {
-        super.connectedCallback();
+    async _setupSubscriptions() {
+        this._unsubscribeAll();
+        const version = ++this._setupVersion;
         if (this.hass) {
-            // Подписываемся на изменения состояний сущностей
             const subscriptions = this.hassSubscribe();
-            this._unsubscribeFuncs = await Promise.all(subscriptions.map(subscription => subscription()));
+            const funcs = await Promise.all(subscriptions.map((subscription) => subscription()));
+            if (version !== this._setupVersion)
+                return;
+            this._unsubscribeFuncs = funcs;
         }
     }
-    disconnectedCallback() {
-        super.disconnectedCallback();
-        // Отписываемся от всех событий при отключении
-        this._unsubscribeFuncs.forEach(unsubscribe => {
+    _unsubscribeAll() {
+        this._unsubscribeFuncs.forEach((unsubscribe) => {
             if (unsubscribe && typeof unsubscribe === 'function') {
                 unsubscribe();
             }
         });
         this._unsubscribeFuncs = [];
     }
-    _handleEvent(ev) {
-        // Обработка событий
+    updated(changedProperties) {
+        super.updated?.(changedProperties);
+        if (changedProperties.has('hass') || changedProperties.has('_config')) {
+            this._setupSubscriptions();
+        }
+    }
+    async connectedCallback() {
+        super.connectedCallback();
+        await this._setupSubscriptions();
+    }
+    disconnectedCallback() {
+        this._unsubscribeAll();
+        super.disconnectedCallback();
     }
 }
 __decorate([
@@ -115,27 +128,18 @@ __decorate([
 
 var title$1 = "Skycooker Card";
 var description$1 = "A card for managing Skycooker devices.";
-var progress$1 = "Progress";
 var remaining$1 = "Remaining";
 var min$1 = "min";
-var cooking_time_progress$1 = "Cooking time";
 var delayed_start$1 = "Delayed Start";
 var auto_warm$1 = "Auto Warm";
 var start$1 = "Start";
 var stop$1 = "Stop";
 var start_delayed$1 = "Start Delayed";
 var delayed_launch$1 = "Delayed Launch";
-var select_mode$1 = "Select Program";
-var select_additional_mode$1 = "Select Additional Program";
-var select_temperature$1 = "Temperature";
-var select_hours$1 = "Hours";
-var select_minutes$1 = "Minutes";
-var select_delayed_start_hours$1 = "Delayed Start Hours";
-var select_delayed_start_minutes$1 = "Delayed Start Minutes";
 var not_configured$1 = "Not configured";
 var please_configure$1 = "Please configure the card in the editor";
 var additional_settings$1 = "Additional Settings";
-var cooking_time_label$1 = "Cooking Time";
+var cooking_time_label$1 = "Total cooking time";
 var total_time$1 = "Total Time";
 var hours$1 = "h";
 var minutes$1 = "m";
@@ -168,27 +172,18 @@ var buttons$1 = "Buttons";
 var favorite_modes$1 = "Favorite Programs";
 var all_modes$1 = "All Programs";
 var standby_mode$1 = "Standby Mode";
+var auto_fill$1 = "Auto-fill by device";
 var enTranslations = {
 	title: title$1,
 	description: description$1,
-	"button.label": "Click me",
-	progress: progress$1,
 	remaining: remaining$1,
 	min: min$1,
-	cooking_time_progress: cooking_time_progress$1,
 	delayed_start: delayed_start$1,
 	auto_warm: auto_warm$1,
 	start: start$1,
 	stop: stop$1,
 	start_delayed: start_delayed$1,
 	delayed_launch: delayed_launch$1,
-	select_mode: select_mode$1,
-	select_additional_mode: select_additional_mode$1,
-	select_temperature: select_temperature$1,
-	select_hours: select_hours$1,
-	select_minutes: select_minutes$1,
-	select_delayed_start_hours: select_delayed_start_hours$1,
-	select_delayed_start_minutes: select_delayed_start_minutes$1,
 	not_configured: not_configured$1,
 	please_configure: please_configure$1,
 	additional_settings: additional_settings$1,
@@ -224,32 +219,24 @@ var enTranslations = {
 	buttons: buttons$1,
 	favorite_modes: favorite_modes$1,
 	all_modes: all_modes$1,
-	standby_mode: standby_mode$1
+	standby_mode: standby_mode$1,
+	auto_fill: auto_fill$1
 };
 
 var title = "Карточка SkyCooker";
 var description = "Карточка для управления устройствами SkyCooker.";
-var progress = "Прогресс";
 var remaining = "Оставшееся время";
 var min = "мин";
-var cooking_time_progress = "Время приготовления";
 var delayed_start = "Отложенный старт";
 var auto_warm = "Автораподогрев";
 var start = "Старт";
 var stop = "Стоп";
 var start_delayed = "Отложенный старт";
 var delayed_launch = "Отложенный старт";
-var select_mode = "Выбрать программу";
-var select_additional_mode = "Выбрать дополнительную программу";
-var select_temperature = "Температура";
-var select_hours = "Часы";
-var select_minutes = "Минуты";
-var select_delayed_start_hours = "Часы отложенного старта";
-var select_delayed_start_minutes = "Минуты отложенного старта";
 var not_configured = "Не настроено";
 var please_configure = "Пожалуйста, настройте карточку в редакторе";
 var additional_settings = "Дополнительные настройки";
-var cooking_time_label = "Общее время работы программы";
+var cooking_time_label = "Общее время приготовления";
 var total_time = "Общее время";
 var hours = "ч";
 var minutes = "м";
@@ -282,27 +269,18 @@ var buttons = "Кнопки";
 var favorite_modes = "Избранные программы";
 var all_modes = "Все программы";
 var standby_mode = "Режим ожидания";
+var auto_fill = "Автозаполнить по устройству";
 var ruTranslations = {
 	title: title,
 	description: description,
-	"button.label": "Нажми меня",
-	progress: progress,
 	remaining: remaining,
 	min: min,
-	cooking_time_progress: cooking_time_progress,
 	delayed_start: delayed_start,
 	auto_warm: auto_warm,
 	start: start,
 	stop: stop,
 	start_delayed: start_delayed,
 	delayed_launch: delayed_launch,
-	select_mode: select_mode,
-	select_additional_mode: select_additional_mode,
-	select_temperature: select_temperature,
-	select_hours: select_hours,
-	select_minutes: select_minutes,
-	select_delayed_start_hours: select_delayed_start_hours,
-	select_delayed_start_minutes: select_delayed_start_minutes,
 	not_configured: not_configured,
 	please_configure: please_configure,
 	additional_settings: additional_settings,
@@ -338,7 +316,8 @@ var ruTranslations = {
 	buttons: buttons,
 	favorite_modes: favorite_modes,
 	all_modes: all_modes,
-	standby_mode: standby_mode
+	standby_mode: standby_mode,
+	auto_fill: auto_fill
 };
 
 // Файл локализации для skycooker-ha-card
@@ -366,6 +345,1390 @@ function getLanguage(config, hass) {
     return hassLanguage;
 }
 
+// Константы для skycooker-ha-card
+// Keep in sync with package.json version
+const CARD_VERSION = "1.1.2";
+
+// Конфигурация данных для skycooker-ha-card
+const CONFIG_ENTITY_KEYS = [
+    'mode_entity',
+    'additional_mode_entity',
+    'cooking_time_hours_entity',
+    'cooking_time_minutes_entity',
+    'delayed_start_hours_entity',
+    'delayed_start_minutes_entity',
+    'auto_warm_entity',
+    'start_entity',
+    'stop_entity',
+    'start_delayed_entity',
+    'cooking_temperature_entity',
+    'temperature_entity',
+    'remaining_time_entity',
+    'cooking_time_entity',
+    'status_entity',
+    'current_mode_entity',
+    'current_additional_mode_entity',
+    'auto_warm_time_entity',
+    'delayed_launch_time_entity',
+    'favorite_modes_entity',
+];
+const DEFAULT_CONFIG = {
+    type: 'custom:skycooker-ha-card',
+    name: 'SkyCooker',
+    icon: 'mdi:stove',
+    language: 'ru',
+    mode_entity: '',
+    additional_mode_entity: '',
+    cooking_time_hours_entity: '',
+    cooking_time_minutes_entity: '',
+    delayed_start_hours_entity: '',
+    delayed_start_minutes_entity: '',
+    auto_warm_entity: '',
+    start_entity: '',
+    stop_entity: '',
+    start_delayed_entity: '',
+    temperature_entity: '',
+    cooking_temperature_entity: '',
+    remaining_time_entity: '',
+    cooking_time_entity: '',
+    status_entity: '',
+    current_mode_entity: '',
+    current_additional_mode_entity: '',
+    auto_warm_time_entity: '',
+    delayed_launch_time_entity: '',
+    favorite_modes_entity: '',
+};
+function normalizeConfig(config, hass) {
+    if (!config) {
+        throw new Error('Configuration is required');
+    }
+    const lang = config.language ?? hass?.language ?? 'ru';
+    return {
+        type: config.type ?? DEFAULT_CONFIG.type,
+        name: config.name ?? DEFAULT_CONFIG.name,
+        icon: config.icon ?? DEFAULT_CONFIG.icon,
+        language: lang,
+        mode_entity: config.mode_entity ?? '',
+        additional_mode_entity: config.additional_mode_entity ?? '',
+        cooking_time_hours_entity: config.cooking_time_hours_entity ?? '',
+        cooking_time_minutes_entity: config.cooking_time_minutes_entity ?? '',
+        delayed_start_hours_entity: config.delayed_start_hours_entity ?? '',
+        delayed_start_minutes_entity: config.delayed_start_minutes_entity ?? '',
+        auto_warm_entity: config.auto_warm_entity ?? '',
+        start_entity: config.start_entity ?? '',
+        stop_entity: config.stop_entity ?? '',
+        start_delayed_entity: config.start_delayed_entity ?? '',
+        temperature_entity: config.temperature_entity ?? '',
+        cooking_temperature_entity: config.cooking_temperature_entity ?? '',
+        remaining_time_entity: config.remaining_time_entity ?? '',
+        cooking_time_entity: config.cooking_time_entity ?? '',
+        status_entity: config.status_entity ?? '',
+        current_mode_entity: config.current_mode_entity ?? '',
+        current_additional_mode_entity: config.current_additional_mode_entity ?? '',
+        auto_warm_time_entity: config.auto_warm_time_entity ?? '',
+        delayed_launch_time_entity: config.delayed_launch_time_entity ?? '',
+        favorite_modes_entity: config.favorite_modes_entity ?? '',
+    };
+}
+
+const STANDBY_OPTIONS = [
+    'unknown',
+    'Нет',
+    'Режим ожидания',
+    'None',
+    'Standby Mode',
+    '',
+];
+const POSSIBLE_OPTION_ATTRS = [
+    'options',
+    'temperature_options',
+    'values',
+    'list',
+    'temperature_values',
+    'temperature_list',
+    'temp_options',
+    'temp_values',
+];
+const FAVORITE_MODES_ATTRS = [
+    'options',
+    'list',
+    'favorite_modes',
+    'modes',
+    'favoriteModes',
+    'favorites',
+    'favorite_list',
+];
+function getEntityState(hass, entityId) {
+    if (!entityId || !hass)
+        return 'N/A';
+    return hass.states[entityId]?.state ?? 'N/A';
+}
+function getEntityOptions(hass, entityId) {
+    return getOptionsFromState(hass, entityId);
+}
+function getOptionsFromState(hass, entityId) {
+    if (!entityId || !hass)
+        return [];
+    const stateObj = hass.states[entityId];
+    if (!stateObj?.attributes)
+        return [];
+    let options;
+    for (const attr of POSSIBLE_OPTION_ATTRS) {
+        if (stateObj.attributes[attr]) {
+            const val = stateObj.attributes[attr];
+            if (Array.isArray(val)) {
+                options = val;
+            }
+            else if (typeof val === 'object' && val !== null) {
+                options = Object.values(val);
+            }
+            else if (typeof val === 'string') {
+                options = val.split(',').map((s) => s.trim());
+            }
+            break;
+        }
+    }
+    if (!options?.length)
+        return [];
+    return options.filter((o) => o !== 'unknown' &&
+        !STANDBY_OPTIONS.includes(o) &&
+        o != null &&
+        o !== '');
+}
+function getSelectOptions(hass, entityId) {
+    const options = getOptionsFromState(hass, entityId);
+    return options.map((option) => x `<mwc-list-item value=${option}>${option}</mwc-list-item>`);
+}
+/** Опции подпрограммы 0-15 для select.subprogram интеграции */
+const SUBPROGRAM_OPTIONS = Array.from({ length: 16 }, (_, i) => String(i));
+function getSubprogramSelectOptions(hass, entityId) {
+    const options = getOptionsFromState(hass, entityId);
+    const opts = options.length > 0 ? options : SUBPROGRAM_OPTIONS;
+    return opts.map((option) => x `<mwc-list-item value=${option}>${option}</mwc-list-item>`);
+}
+function getTemperatureOptionsWithFallback(hass, temperatureEntity) {
+    if (!temperatureEntity || !hass)
+        return [];
+    const stateObj = hass.states[temperatureEntity];
+    if (!stateObj?.attributes)
+        return [];
+    const standardOptions = getSelectOptions(hass, temperatureEntity);
+    if (standardOptions.length > 0)
+        return standardOptions;
+    for (const attrName of POSSIBLE_OPTION_ATTRS) {
+        const attr = stateObj.attributes[attrName];
+        if (!attr)
+            continue;
+        let options = Array.isArray(attr)
+            ? attr
+            : typeof attr === 'object' && attr !== null
+                ? Object.values(attr)
+                : typeof attr === 'string'
+                    ? attr.split(',').map((s) => s.trim())
+                    : [];
+        options = options.filter((o) => o !== 'unknown' && o !== '' && o != null && o !== undefined);
+        if (options.length > 0) {
+            return options.map((o) => {
+                const val = o.replace(/°?\s*C$/i, '').trim() || o;
+                return x `<mwc-list-item value=${val}>${o}</mwc-list-item>`;
+            });
+        }
+    }
+    if (stateObj.attributes) {
+        const allOptions = [];
+        for (const [, value] of Object.entries(stateObj.attributes)) {
+            if (typeof value === 'string' &&
+                (value.includes('°C') || value.includes('C') || !isNaN(Number(value)))) {
+                allOptions.push(value);
+            }
+            else if (Array.isArray(value)) {
+                allOptions.push(...value.filter((item) => typeof item === 'string' && item !== 'unknown' && item !== ''));
+            }
+        }
+        if (allOptions.length > 0) {
+            return allOptions.map((o) => {
+                const val = o.replace(/°?\s*C$/i, '').trim() || o;
+                return x `<mwc-list-item value=${val}>${o}</mwc-list-item>`;
+            });
+        }
+    }
+    const defaultTemps = ['50', '60', '70', '80', '90', '100'];
+    return defaultTemps.map((temp) => x `<mwc-list-item value=${temp}>${temp} °C</mwc-list-item>`);
+}
+/** Убирает °C из значения температуры для select_option (интеграция ожидает "100", не "100°C") */
+function normalizeTemperatureValue(value) {
+    if (!value || typeof value !== 'string')
+        return value;
+    return value.replace(/°?\s*C$/i, '').trim() || value;
+}
+function getFavoriteModes(hass, entityId) {
+    if (!entityId || !hass)
+        return [];
+    const stateObj = hass.states[entityId];
+    if (!stateObj?.attributes)
+        return [];
+    let modes = [];
+    for (const attr of FAVORITE_MODES_ATTRS) {
+        const val = stateObj.attributes[attr];
+        if (val) {
+            modes = Array.isArray(val)
+                ? val
+                : typeof val === 'object' && val !== null
+                    ? Object.values(val)
+                    : typeof val === 'string'
+                        ? val.split(',').map((s) => s.trim())
+                        : [];
+            break;
+        }
+    }
+    return modes.filter((m) => m && typeof m === 'string' && m.trim() !== '' && !STANDBY_OPTIONS.includes(m));
+}
+function hasFavoriteModes(hass, entityId) {
+    return getFavoriteModes(hass, entityId).length > 0;
+}
+/** Маппинг суффиксов entity_id интеграции skycooker-ha на ключи конфига */
+const ENTITY_SUFFIX_TO_CONFIG_KEY = [
+    { domain: 'sensor', suffix: 'status', configKey: 'status_entity' },
+    { domain: 'sensor', suffix: 'temperature', configKey: 'temperature_entity' },
+    { domain: 'sensor', suffix: 'remaining_time', configKey: 'remaining_time_entity' },
+    { domain: 'sensor', suffix: 'cooking_time', configKey: 'cooking_time_entity' },
+    { domain: 'sensor', suffix: 'current_program', configKey: 'current_mode_entity' },
+    { domain: 'sensor', suffix: 'subprogram', configKey: 'current_additional_mode_entity' },
+    { domain: 'sensor', suffix: 'auto_warm_time', configKey: 'auto_warm_time_entity' },
+    { domain: 'sensor', suffix: 'delayed_launch_time', configKey: 'delayed_launch_time_entity' },
+    { domain: 'select', suffix: 'program', configKey: 'mode_entity' },
+    { domain: 'select', suffix: 'mode', configKey: 'mode_entity' },
+    { domain: 'select', suffix: 'subprogram', configKey: 'additional_mode_entity' },
+    { domain: 'select', suffix: 'temperature', configKey: 'cooking_temperature_entity' },
+    { domain: 'select', suffix: 'cooking_time_hours', configKey: 'cooking_time_hours_entity' },
+    { domain: 'select', suffix: 'cooking_time_minutes', configKey: 'cooking_time_minutes_entity' },
+    { domain: 'select', suffix: 'delayed_start_hours', configKey: 'delayed_start_hours_entity' },
+    { domain: 'select', suffix: 'delayed_start_minutes', configKey: 'delayed_start_minutes_entity' },
+    { domain: 'select', suffix: 'favorites', configKey: 'favorite_modes_entity' },
+    { domain: 'switch', suffix: 'auto_warm', configKey: 'auto_warm_entity' },
+    { domain: 'button', suffix: 'start', configKey: 'start_entity' },
+    { domain: 'button', suffix: 'stop', configKey: 'stop_entity' },
+    { domain: 'button', suffix: 'start_delayed', configKey: 'start_delayed_entity' },
+];
+function autoFillEntitiesByDevice(hass, seedEntityId) {
+    if (!hass || !seedEntityId)
+        return {};
+    const parts = seedEntityId.split('.');
+    if (parts.length !== 2)
+        return {};
+    const objectId = parts[1];
+    let prefix = '';
+    for (const { suffix } of ENTITY_SUFFIX_TO_CONFIG_KEY) {
+        const suffixWithUnderscore = '_' + suffix;
+        if (objectId.endsWith(suffixWithUnderscore)) {
+            prefix = objectId.slice(0, -suffixWithUnderscore.length);
+            break;
+        }
+    }
+    if (!prefix)
+        return {};
+    const result = {};
+    const prefixMatch = prefix + '_';
+    for (const entityId of Object.keys(hass.states)) {
+        const [domain, objId] = entityId.split('.');
+        if (!objId?.startsWith(prefixMatch))
+            continue;
+        for (const { domain: d, suffix, configKey } of ENTITY_SUFFIX_TO_CONFIG_KEY) {
+            if (domain === d && objId === prefixMatch + suffix) {
+                result[configKey] = entityId;
+                break;
+            }
+        }
+    }
+    return result;
+}
+
+// Утилиты для проверки статусов (поддержка RU/EN)
+// Значения соответствуют sensor.status интеграции skycooker-ha
+const STATUS_ACTIVE = [
+    'Готовка',
+    'Cooking',
+    'Разогрев',
+    'Warming',
+    'Отложенный старт',
+    'Delayed Launch',
+    'Подогрев',
+    'Auto Warm',
+    'Ожидание',
+    'Waiting',
+];
+const STATUS_OFF = [
+    'Выключена',
+    'Off',
+    'Полностью выключена',
+    'Fully off',
+];
+const STATUS_AUTO_WARM = ['Подогрев', 'Auto Warm'];
+const STATUS_DELAYED_LAUNCH = ['Отложенный старт', 'Delayed Launch'];
+function shouldShowTemperature(_currentMode, status) {
+    return STATUS_ACTIVE.includes(status);
+}
+function isStatusOff(status) {
+    return STATUS_OFF.includes(status);
+}
+function shouldShowAutoWarmTime(status, hasAutoWarmTimeEntity) {
+    return STATUS_AUTO_WARM.includes(status) && hasAutoWarmTimeEntity;
+}
+function shouldShowDelayedLaunchTime(status, hasDelayedLaunchEntity) {
+    return (STATUS_DELAYED_LAUNCH.includes(status) && hasDelayedLaunchEntity);
+}
+
+function renderSkyCookerHeader(config, hass, statusEntityId) {
+    const statusState = statusEntityId && hass ? hass.states[statusEntityId]?.state ?? '' : '';
+    const isOff = isStatusOff(statusState);
+    const isActive = statusState && !isOff;
+    return x `
+    <div class="new-header">
+      <div class="new-icon">
+        <ha-icon .icon=${config.icon || 'mdi:stove'}></ha-icon>
+      </div>
+      <div class="new-summary">
+        <div class="new-name">${config.name || 'SkyCooker'}</div>
+      </div>
+      <div class="new-status-indicator">
+        ${isActive
+        ? x `<ha-icon
+              icon="mdi:circle"
+              style="color: var(--success-color);"
+            ></ha-icon>`
+        : isOff
+            ? x `<ha-icon
+                icon="mdi:circle"
+                style="color: var(--error-color);"
+              ></ha-icon>`
+            : ''}
+      </div>
+    </div>
+  `;
+}
+
+function renderSkyCookerActionButtons(config, t, onButtonPress) {
+    return x `
+    <div class="new-action-buttons">
+      ${config.start_entity
+        ? x `
+            <div class="new-action-button-wrapper">
+              <ha-button
+                @click=${() => onButtonPress(config.start_entity)}
+                class="new-action-button"
+              >
+                <ha-icon icon="mdi:play"></ha-icon>
+              </ha-button>
+              <span class="new-action-button-label">${t('start')}</span>
+            </div>
+          `
+        : ''}
+      ${config.stop_entity
+        ? x `
+            <div class="new-action-button-wrapper">
+              <ha-button
+                @click=${() => onButtonPress(config.stop_entity)}
+                class="new-action-button"
+              >
+                <ha-icon icon="mdi:stop"></ha-icon>
+              </ha-button>
+              <span class="new-action-button-label">${t('stop')}</span>
+            </div>
+          `
+        : ''}
+      ${config.start_delayed_entity
+        ? x `
+            <div class="new-action-button-wrapper">
+              <ha-button
+                @click=${() => onButtonPress(config.start_delayed_entity)}
+                class="new-action-button"
+              >
+                <ha-icon icon="mdi:timer-play"></ha-icon>
+              </ha-button>
+              <span class="new-action-button-label">${t('start_delayed')}</span>
+            </div>
+          `
+        : ''}
+    </div>
+  `;
+}
+
+function renderSkyCookerStatusBlock(config, hass, t) {
+    const temperatureEntity = config.cooking_temperature_entity || config.temperature_entity;
+    const showTemp = shouldShowTemperature(getEntityState(hass, config.current_mode_entity), getEntityState(hass, config.status_entity));
+    const showAutoWarmTime = shouldShowAutoWarmTime(getEntityState(hass, config.status_entity), !!config.auto_warm_time_entity);
+    const showDelayedLaunchTime = shouldShowDelayedLaunchTime(getEntityState(hass, config.status_entity), !!config.delayed_launch_time_entity);
+    return x `
+    <div class="new-control-group">
+      ${showTemp && temperatureEntity
+        ? x `
+            <div class="new-control-item">
+              <ha-icon icon="mdi:thermometer" class="new-control-icon"></ha-icon>
+              <div class="new-control-content">
+                <div class="new-control-label">${t('temperature')}</div>
+                <div class="new-control-value">
+                  ${getEntityState(hass, temperatureEntity)}°C
+                </div>
+              </div>
+            </div>
+          `
+        : ''}
+      <div class="new-time-sensors-container">
+        <div class="new-time-sensors-row">
+          <div class="new-control-item">
+            <div class="new-control-label">${t('remaining')}</div>
+            <div class="new-control-icon-value">
+              <ha-icon icon="mdi:timer" class="new-control-icon"></ha-icon>
+              <div class="new-control-value">
+                ${getEntityState(hass, config.remaining_time_entity)}
+              </div>
+            </div>
+          </div>
+          <div class="new-control-item">
+            <div class="new-control-label">${t('cooking_time_label')}</div>
+            <div class="new-control-icon-value">
+              <ha-icon icon="mdi:clock" class="new-control-icon"></ha-icon>
+              <div class="new-control-value">
+                ${getEntityState(hass, config.cooking_time_entity)}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="new-time-sensors-row">
+          ${showAutoWarmTime && config.auto_warm_time_entity
+        ? x `
+                <div class="new-control-item">
+                  <div class="new-control-label">${t('auto_warm_time')}</div>
+                  <div class="new-control-icon-value">
+                    <ha-icon
+                      icon="mdi:clock-start"
+                      class="new-control-icon"
+                    ></ha-icon>
+                    <div class="new-control-value">
+                      ${getEntityState(hass, config.auto_warm_time_entity)}
+                    </div>
+                  </div>
+                </div>
+              `
+        : ''}
+          ${showDelayedLaunchTime && config.delayed_launch_time_entity
+        ? x `
+                <div class="new-control-item">
+                  <div class="new-control-label">${t('delayed_launch')}</div>
+                  <div class="new-control-icon-value">
+                    <ha-icon
+                      icon="mdi:timer-sand"
+                      class="new-control-icon"
+                    ></ha-icon>
+                    <div class="new-control-value">
+                      ${getEntityState(hass, config.delayed_launch_time_entity)}
+                    </div>
+                  </div>
+                </div>
+              `
+        : ''}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderSkyCookerAdditionalControls(config, hass, t, expanded, onToggle, onSelectChange, onSwitchChange) {
+    const temperatureEntity = config.cooking_temperature_entity || config.temperature_entity;
+    return x `
+    <div class="new-additional-controls">
+      <div class="new-section-header" @click=${onToggle}>
+        <ha-icon icon="mdi:cog"></ha-icon>
+        <span>${t('additional_settings')}</span>
+        <ha-icon
+          .icon=${expanded ? 'mdi:chevron-up' : 'mdi:chevron-down'}
+          class="new-expand-icon"
+        ></ha-icon>
+      </div>
+      <div
+        class="new-additional-content"
+        style="display: ${expanded ? 'block' : 'none'};"
+      >
+        ${config.additional_mode_entity
+        ? x `
+              <div class="new-cooking-time-section">
+                <div class="new-cooking-time-header">
+                  <ha-icon icon="mdi:cog-outline"></ha-icon>
+                  <span class="new-cooking-time-label"
+                    >${t('additional_mode')}</span
+                  >
+                </div>
+                <div class="new-cooking-time-controls">
+                  <ha-select
+                    .value=${getEntityState(hass, config.additional_mode_entity)}
+                    @selected=${(ev) => onSelectChange(config.additional_mode_entity, ev)}
+                    @closed=${(ev) => ev.stopPropagation()}
+                  >
+                    ${getSubprogramSelectOptions(hass, config.additional_mode_entity)}
+                  </ha-select>
+                </div>
+              </div>
+            `
+        : ''}
+        ${config.auto_warm_entity
+        ? x `
+              <div class="new-auto-warm-section">
+                <div class="new-auto-warm-header">
+                  <ha-icon icon="mdi:heat-wave"></ha-icon>
+                  <span class="new-auto-warm-label">${t('auto_warm')}</span>
+                  <ha-switch
+                    .checked=${getEntityState(hass, config.auto_warm_entity) ===
+            'on'}
+                    @change=${(ev) => onSwitchChange(config.auto_warm_entity, ev.target.checked)}
+                  ></ha-switch>
+                </div>
+              </div>
+            `
+        : ''}
+        ${temperatureEntity
+        ? x `
+              <div class="new-temperature-section">
+                <div class="new-temperature-header">
+                  <ha-icon icon="mdi:thermometer"></ha-icon>
+                  <span class="new-temperature-label">${t('temperature')}</span>
+                </div>
+                <div class="new-temperature-select-container">
+                  <ha-select
+                    class="new-temperature-hidden-select"
+                    .value=${getEntityState(hass, temperatureEntity)}
+                    @selected=${(ev) => onSelectChange(temperatureEntity, ev)}
+                    @closed=${(ev) => ev.stopPropagation()}
+                  >
+                    ${getTemperatureOptionsWithFallback(hass, temperatureEntity)}
+                  </ha-select>
+                </div>
+              </div>
+            `
+        : ''}
+        ${config.cooking_time_hours_entity &&
+        config.cooking_time_minutes_entity
+        ? x `
+              <div class="new-cooking-time-section">
+                <div class="new-cooking-time-header">
+                  <ha-icon icon="mdi:clock"></ha-icon>
+                  <span class="new-cooking-time-label"
+                    >${t('cooking_time_label')}</span
+                  >
+                </div>
+                <div class="new-cooking-time-controls">
+                  <ha-select
+                    .value=${getEntityState(hass, config.cooking_time_hours_entity)}
+                    @selected=${(ev) => onSelectChange(config.cooking_time_hours_entity, ev)}
+                    @closed=${(ev) => ev.stopPropagation()}
+                  >
+                    ${getSelectOptions(hass, config.cooking_time_hours_entity)}
+                  </ha-select>
+                  <span class="new-time-unit"> ${t('hours')} </span>
+                  <ha-select
+                    .value=${getEntityState(hass, config.cooking_time_minutes_entity)}
+                    @selected=${(ev) => onSelectChange(config.cooking_time_minutes_entity, ev)}
+                    @closed=${(ev) => ev.stopPropagation()}
+                  >
+                    ${getSelectOptions(hass, config.cooking_time_minutes_entity)}
+                  </ha-select>
+                  <span class="new-time-unit"> ${t('minutes')}</span>
+                </div>
+              </div>
+            `
+        : ''}
+        ${config.delayed_start_hours_entity &&
+        config.delayed_start_minutes_entity
+        ? x `
+              <div class="new-cooking-time-section">
+                <div class="new-cooking-time-header">
+                  <ha-icon icon="mdi:timer-sand"></ha-icon>
+                  <span class="new-cooking-time-label"
+                    >${t('delayed_start')}</span
+                  >
+                </div>
+                <div class="new-cooking-time-controls">
+                  <ha-select
+                    .value=${getEntityState(hass, config.delayed_start_hours_entity)}
+                    @selected=${(ev) => onSelectChange(config.delayed_start_hours_entity, ev)}
+                    @closed=${(ev) => ev.stopPropagation()}
+                  >
+                    ${getSelectOptions(hass, config.delayed_start_hours_entity)}
+                  </ha-select>
+                  <span class="new-time-unit"> ${t('hours')} </span>
+                  <ha-select
+                    .value=${getEntityState(hass, config.delayed_start_minutes_entity)}
+                    @selected=${(ev) => onSelectChange(config.delayed_start_minutes_entity, ev)}
+                    @closed=${(ev) => ev.stopPropagation()}
+                  >
+                    ${getSelectOptions(hass, config.delayed_start_minutes_entity)}
+                  </ha-select>
+                  <span class="new-time-unit"> ${t('minutes')}</span>
+                </div>
+              </div>
+            `
+        : ''}
+      </div>
+    </div>
+  `;
+}
+
+// Маппинг режимов готовки на иконки MDI
+// Соответствует program_names интеграции skycooker-ha (RU/EN)
+const MODE_ICONS = {
+    // RU
+    мультиповар: 'mdi:pot-mix',
+    'рис/крупы': 'mdi:rice',
+    томление: 'mdi:pot-steam',
+    плов: 'mdi:rice',
+    жарка: 'mdi:frying-pan',
+    тушение: 'mdi:pot-steam',
+    'паста/макароны': 'mdi:pasta',
+    'молочная каша': 'mdi:bowl-mix',
+    суп: 'mdi:soup',
+    йогурт: 'mdi:cup',
+    выпечка: 'mdi:bread-slice',
+    'на пару': 'mdi:steam',
+    'варка/бобовые': 'mdi:pot',
+    дичь: 'mdi:food-drumstick',
+    пицца: 'mdi:pizza',
+    хлеб: 'mdi:bread-slice',
+    'детское питание': 'mdi:baby-bottle',
+    вакуум: 'mdi:vacuum',
+    фритюр: 'mdi:frying-pan',
+    десерты: 'mdi:cake',
+    экспресс: 'mdi:lightning-bolt',
+    холодец: 'mdi:food',
+    'йогурт/тесто': 'mdi:cup',
+    'запеканка/чизкейк': 'mdi:cheese',
+    соус: 'mdi:cup',
+    разогрев: 'mdi:microwave',
+    подогрев: 'mdi:heat-wave',
+    варка: 'mdi:pot',
+    'режим ожидания': 'mdi:power-sleep',
+    нет: 'mdi:minus',
+    // EN
+    'multi-chef': 'mdi:pot-mix',
+    'rice/cereals': 'mdi:rice',
+    languor: 'mdi:pot-steam',
+    pilaf: 'mdi:rice',
+    frying: 'mdi:frying-pan',
+    stewing: 'mdi:pot-steam',
+    pasta: 'mdi:pasta',
+    'milk porridge': 'mdi:bowl-mix',
+    soup: 'mdi:soup',
+    yogurt: 'mdi:cup',
+    baking: 'mdi:bread-slice',
+    steam: 'mdi:steam',
+    'cooking/legumes': 'mdi:pot',
+    wildfowl: 'mdi:food-drumstick',
+    pizza: 'mdi:pizza',
+    bread: 'mdi:bread-slice',
+    'baby food': 'mdi:baby-bottle',
+    'sous-vide': 'mdi:vacuum',
+    'deep frying': 'mdi:frying-pan',
+    desserts: 'mdi:cake',
+    express: 'mdi:lightning-bolt',
+    galantine: 'mdi:food',
+    'yogurt/dough': 'mdi:cup',
+    cheesecake: 'mdi:cheese',
+    sous: 'mdi:cup',
+    'warming up': 'mdi:microwave',
+    warming: 'mdi:heat-wave',
+    cooking: 'mdi:pot',
+    'standby mode': 'mdi:power-sleep',
+    none: 'mdi:minus',
+    // Legacy / alternative
+    гриль: 'mdi:grill',
+    пароварка: 'mdi:steam',
+    каша: 'mdi:bowl',
+    'жарка на воздухе': 'mdi:air-filter',
+    ферментация: 'mdi:leaf',
+    пастеризация: 'mdi:thermometer-water',
+    сушка: 'mdi:fan',
+};
+function getModeIcon(modeName) {
+    if (!modeName || typeof modeName !== 'string')
+        return 'mdi:stove';
+    const key = modeName.toLowerCase().trim();
+    return MODE_ICONS[key] ?? 'mdi:stove';
+}
+
+function renderSkyCookerModeSelector(params) {
+    const { config, hass, t, selectedMode, selectedModeName, onShowFavorite, onShowAll, onModeClick, getSelectedTime, } = params;
+    const getEntityStateLocal = (entityId) => getEntityState(hass, entityId);
+    const getModeButtons = (entityId) => {
+        const options = getEntityOptions(hass, entityId);
+        return options.map((option) => x `
+      <div class="new-mode-button-wrapper">
+        <ha-button
+          class="new-mode-button"
+          @click=${() => onModeClick(entityId, option)}
+        >
+          <ha-icon icon="${getModeIcon(option)}" class="mode-button-icon"></ha-icon>
+          <span class="mode-button-text">${option}</span>
+        </ha-button>
+      </div>
+    `);
+    };
+    const getFavoriteModeButtons = (entityId) => {
+        const options = getFavoriteModes(hass, config?.favorite_modes_entity);
+        return options.map((option) => x `
+      <div class="new-mode-button-wrapper">
+        <ha-button
+          class="new-mode-button"
+          @click=${() => onModeClick(entityId, option)}
+        >
+          <ha-icon icon="${getModeIcon(option)}" class="mode-button-icon"></ha-icon>
+          <span class="mode-button-text">${option}</span>
+        </ha-button>
+      </div>
+    `);
+    };
+    return x `
+    <div class="new-control-group">
+      <div class="new-mode-selector">
+        <div class="new-mode-label" style="text-align: center;">
+          ${t('current_mode')}: ${getEntityStateLocal(config.current_mode_entity)} |
+          ${t('status')}: ${getEntityStateLocal(config.status_entity)}
+        </div>
+        <div class="new-selected-mode">
+          ${t('selected_mode')}: <span class="selected-mode-text">${selectedModeName || '-----'}</span>
+        </div>
+        <div class="new-selected-time">
+          ${t('selected_time')}: <span class="selected-time-text">${getSelectedTime() || '-----'}</span>
+        </div>
+
+        ${config.mode_entity ? x `
+          ${hasFavoriteModes(hass, config?.favorite_modes_entity) ? x `
+            <div class="new-mode-tabs">
+              <div class="new-mode-tab ${selectedMode === 'favorite' ? 'active' : ''}" @click=${onShowFavorite}>
+                ${t('favorite_modes')}
+              </div>
+              <div class="new-mode-tab ${selectedMode === 'all' ? 'active' : ''}" @click=${onShowAll}>
+                ${t('all_modes')}
+              </div>
+            </div>
+          ` : ''}
+
+          <div class="new-mode-buttons">
+            ${selectedMode === 'favorite'
+        ? getFavoriteModeButtons(config.mode_entity)
+        : getModeButtons(config.mode_entity)}
+          </div>
+        ` : ''}
+      </div>
+    </div>
+  `;
+}
+
+const skycookerCardStyles = i$2 `
+  :host {
+    --skycooker-spacing: var(--mush-spacing, 10px);
+    --skycooker-control-radius: var(--mush-control-border-radius, 12px);
+    --skycooker-chip-radius: var(--mush-chip-border-radius, 19px);
+    --skycooker-chip-height: var(--mush-chip-height, 36px);
+    --skycooker-icon-radius: var(--mush-icon-border-radius, 50%);
+    --skycooker-icon-size: var(--mush-icon-size, 36px);
+    --skycooker-control-height: var(--mush-control-height, 42px);
+    font-family: var(--mdc-typography-font-family, inherit);
+  }
+
+  ha-card {
+    padding: 16px;
+    position: relative;
+    height: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--divider-color);
+  }
+  .header .icon {
+    font-size: 48px;
+    color: var(--primary-color);
+  }
+  .header .summary {
+    display: flex;
+    flex-direction: column;
+  }
+  .header .name {
+    font-size: 24px;
+    font-weight: bold;
+  }
+  .header .state {
+    font-size: 14px;
+    color: var(--secondary-text-color);
+  }
+  ha-select {
+    min-width: 120px;
+  }
+  ha-button {
+    --mdc-theme-primary: var(--primary-color);
+    --mdc-theme-secondary: var(--secondary-color);
+  }
+  .setup-message {
+    padding: 20px;
+    text-align: center;
+    color: var(--secondary-text-color);
+    font-size: 16px;
+  }
+
+  ha-card.new-design {
+    padding: 12px;
+    gap: 12px;
+    background: var(--card-background-color);
+    border-radius: var(--ha-card-border-radius, 16px);
+    box-shadow: var(--ha-card-box-shadow, 0px 2px 8px rgba(0,0,0,0.1));
+    overflow: hidden;
+  }
+
+  .new-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--skycooker-spacing);
+    padding: var(--skycooker-spacing);
+    background: var(--ha-card-header-color, var(--card-background-color));
+    border-radius: var(--skycooker-control-radius);
+    margin: -12px -12px 12px -12px;
+    border-bottom: 1px solid var(--divider-color);
+    color: var(--primary-text-color);
+  }
+
+  .new-icon {
+    width: var(--skycooker-icon-size);
+    height: var(--skycooker-icon-size);
+    min-width: var(--skycooker-icon-size);
+    min-height: var(--skycooker-icon-size);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border-radius: var(--skycooker-icon-radius);
+    background: rgba(var(--rgb-primary-text-color, 255, 255, 255), 0.05);
+    color: var(--primary-color);
+  }
+
+  .new-icon ha-icon {
+    width: calc(var(--skycooker-icon-size) - 8px);
+    height: calc(var(--skycooker-icon-size) - 8px);
+  }
+
+  .new-summary {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .new-name {
+    font-size: var(--title-font-size, 24px);
+    font-weight: 600;
+    font-family: inherit;
+    color: var(--primary-text-color);
+  }
+
+  .new-state {
+    font-size: var(--card-secondary-font-size, 12px);
+    color: var(--secondary-text-color);
+  }
+
+  .new-status-indicator {
+    font-size: 20px;
+  }
+
+  .new-controls-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .new-control-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--skycooker-spacing);
+    padding: var(--skycooker-spacing);
+    background-color: var(--card-background-color);
+    border-radius: var(--skycooker-control-radius);
+    border: 1px solid var(--ha-card-border-color, var(--divider-color));
+  }
+
+  .new-control-item {
+    display: flex;
+    align-items: center;
+    gap: var(--skycooker-spacing);
+  }
+
+  .new-control-icon {
+    font-size: 20px;
+    color: var(--primary-color);
+  }
+
+  .new-control-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .new-control-label {
+    font-size: var(--card-secondary-font-size, 12px);
+    color: var(--secondary-text-color);
+  }
+
+  .new-control-value {
+    font-size: var(--card-primary-font-size, 14px);
+    font-weight: 500;
+  }
+
+  .new-mode-selector {
+    display: flex;
+    flex-direction: column;
+    gap: 0px;
+    border: none;
+    background: none;
+    padding: 0;
+  }
+
+  .new-mode-label {
+    font-size: var(--card-secondary-font-size, 12px);
+    font-weight: 500;
+  }
+
+  .new-selected-mode {
+    font-size: var(--card-primary-font-size, 14px);
+    color: var(--secondary-text-color);
+    text-align: center;
+    font-family: inherit;
+    font-weight: 500;
+  }
+
+  .selected-mode-text {
+    font-size: var(--card-primary-font-size, 14px);
+    font-weight: 500;
+    color: var(--primary-color);
+    margin-left: 4px;
+    font-family: inherit;
+  }
+
+  .new-selected-time {
+    font-size: var(--card-primary-font-size, 14px);
+    color: var(--secondary-text-color);
+    text-align: center;
+    min-height: 20px;
+    font-family: inherit;
+    font-weight: 500;
+  }
+
+  .selected-time-text {
+    font-size: var(--card-primary-font-size, 14px);
+    font-weight: 500;
+    color: var(--primary-color);
+    margin-left: 4px;
+    font-family: inherit;
+  }
+
+  .new-mode-tabs {
+    display: flex;
+    gap: var(--skycooker-spacing);
+    margin-bottom: var(--skycooker-spacing);
+    justify-content: center;
+  }
+
+  .new-mode-tab {
+    padding: 0 16px;
+    height: var(--skycooker-chip-height);
+    min-height: var(--skycooker-chip-height);
+    display: flex;
+    align-items: center;
+    background-color: var(--ha-card-background, var(--card-background-color));
+    border-radius: var(--skycooker-chip-radius);
+    cursor: pointer;
+    font-size: var(--card-primary-font-size, 14px);
+    font-weight: 500;
+    transition: all 0.2s ease;
+    border: 1px solid var(--ha-card-border-color, var(--divider-color));
+  }
+
+  .new-mode-tab.active {
+    background-color: var(--primary-color);
+    color: var(--primary-inverse-color, white);
+    border-color: var(--primary-color);
+  }
+
+  .new-mode-tab:hover {
+    background-color: var(--ha-card-background, var(--card-background-color));
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  }
+
+  .new-mode-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--skycooker-spacing);
+    margin-top: var(--skycooker-spacing);
+    justify-content: center;
+  }
+
+  .new-mode-button-wrapper {
+    flex: 1 1 calc(50% - var(--skycooker-spacing));
+    min-width: 120px;
+    max-width: 200px;
+    display: flex;
+    justify-content: center;
+  }
+
+  .new-mode-button {
+    --mdc-theme-primary: var(--primary-color);
+    --mdc-theme-secondary: var(--secondary-color);
+    border-radius: var(--skycooker-chip-radius);
+    height: var(--skycooker-chip-height);
+    min-height: var(--skycooker-chip-height);
+    padding: 0 16px;
+    font-size: var(--card-primary-font-size, 14px);
+    background-color: var(--ha-card-background, var(--card-background-color));
+    border: 1px solid var(--ha-card-border-color, var(--divider-color));
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-width: 120px;
+    max-width: 200px;
+    white-space: normal;
+    word-wrap: break-word;
+  }
+
+  .new-mode-button .mode-button-icon {
+    width: 18px;
+    height: 18px;
+    margin-right: 6px;
+  }
+
+  .new-mode-button .mode-button-text {
+    font-size: var(--card-primary-font-size, 14px);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+
+  .new-mode-button:hover {
+    background-color: var(--ha-card-background, var(--card-background-color));
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  }
+
+  .new-action-buttons {
+    display: flex;
+    justify-content: center;
+    gap: var(--skycooker-spacing);
+    padding: var(--skycooker-spacing);
+    background-color: var(--card-background-color);
+    border-radius: var(--skycooker-control-radius);
+  }
+
+  .new-action-button-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .new-action-button {
+    --mdc-theme-primary: var(--primary-color);
+    --mdc-theme-secondary: var(--secondary-color);
+    border-radius: 50%;
+    width: 56px;
+    height: 56px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--card-background-color);
+    transition: all 0.2s ease;
+    border: 1px solid var(--ha-card-border-color, var(--divider-color));
+  }
+
+  .new-action-button ha-icon {
+    width: 28px;
+    height: 28px;
+    opacity: 1;
+    filter: brightness(1);
+    font-size: 28px;
+  }
+
+  .new-action-button.pressed {
+    background-color: var(--card-background-color);
+    box-shadow: none;
+  }
+
+  .new-action-button.pressed ha-icon {
+    color: var(--primary-color);
+  }
+
+  .new-action-button-label {
+    font-size: var(--card-secondary-font-size, 12px);
+    color: var(--secondary-text-color);
+    text-align: center;
+  }
+
+  .new-additional-controls {
+    display: flex;
+    flex-direction: column;
+    gap: var(--skycooker-spacing);
+    padding: var(--skycooker-spacing);
+    background-color: var(--card-background-color);
+    border-radius: var(--skycooker-control-radius);
+    margin-top: 4px;
+  }
+
+  .new-section-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .new-section-header ha-icon {
+    font-size: 20px;
+  }
+
+  .new-section-header span {
+    flex: 1;
+    font-size: var(--card-primary-font-size, 14px);
+    font-weight: 600;
+  }
+
+  .new-expand-icon {
+    font-size: 20px;
+    transition: transform 0.3s ease;
+  }
+
+  .new-additional-content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 0;
+    border-top: 1px solid var(--divider-color);
+  }
+
+  .new-auto-warm-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--skycooker-spacing);
+    padding: var(--skycooker-spacing);
+    background-color: var(--card-background-color);
+    border-radius: var(--skycooker-control-radius);
+    margin-bottom: var(--skycooker-spacing);
+  }
+
+  .new-auto-warm-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: center;
+  }
+
+  .new-auto-warm-label {
+    font-size: var(--card-primary-font-size, 14px);
+    font-weight: 600;
+    text-align: center;
+  }
+
+  .new-temperature-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--skycooker-spacing);
+    padding: var(--skycooker-spacing) 12px 24px 12px;
+    background-color: var(--card-background-color);
+    border-radius: var(--skycooker-control-radius);
+    margin: var(--skycooker-spacing) 0;
+    border: 1px solid var(--ha-card-border-color, var(--divider-color));
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .new-temperature-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: center;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .new-temperature-label {
+    font-size: var(--card-primary-font-size, 14px);
+    font-weight: 600;
+    text-align: center;
+  }
+
+  .new-temperature-select-container {
+    display: flex;
+    justify-content: center;
+    padding-left: 0;
+    width: 100%;
+  }
+
+  .new-temperature-hidden-select {
+    width: 100%;
+    min-width: 120px;
+    max-width: 180px;
+    --mdc-theme-primary: var(--primary-color);
+    --mdc-shape-small: var(--skycooker-control-radius);
+    --mdc-menu-min-width: 120px;
+    height: var(--skycooker-control-height);
+    border-radius: var(--skycooker-control-radius);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+
+  .new-cooking-time-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--skycooker-spacing);
+    padding: var(--skycooker-spacing) 12px 24px 12px;
+    background-color: var(--card-background-color);
+    border-radius: var(--skycooker-control-radius);
+    margin: var(--skycooker-spacing) 0;
+    border: 1px solid var(--ha-card-border-color, var(--divider-color));
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .new-cooking-time-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: center;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .new-cooking-time-label {
+    font-size: var(--card-primary-font-size, 14px);
+    font-weight: 600;
+    text-align: center;
+  }
+
+  .new-cooking-time-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: center;
+    padding-left: 0;
+  }
+
+  .new-time-unit {
+    font-size: var(--card-primary-font-size, 14px);
+    font-weight: 500;
+  }
+
+  .new-auto-warm-time {
+    padding-left: 30px;
+    font-size: var(--card-secondary-font-size, 12px);
+    color: var(--secondary-text-color);
+  }
+
+  .new-time-sensors-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .new-time-sensors-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+  }
+
+  .new-time-sensors-row:only-child {
+    justify-content: center;
+  }
+
+  .new-time-sensors-row:nth-child(1):only-child + .new-time-sensors-row {
+    display: none;
+  }
+
+  .new-time-sensors-row:nth-child(1):has(.new-control-item:nth-child(2)) + .new-time-sensors-row:has(.new-control-item:only-child) {
+    justify-content: center;
+  }
+
+  .new-time-sensors-row:nth-child(1):has(.new-control-item:nth-child(2)) + .new-time-sensors-row:has(.new-control-item:nth-child(2)) {
+    justify-content: flex-start;
+  }
+
+  .new-control-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .new-control-icon-value {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  ha-select {
+    --mdc-theme-primary: var(--primary-color);
+    --mdc-shape-small: var(--skycooker-control-radius);
+    min-width: 80px;
+    height: var(--skycooker-control-height);
+    border-radius: var(--skycooker-control-radius);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    font-size: var(--card-primary-font-size, 14px);
+  }
+
+  ha-select .mdc-floating-label {
+    display: none !important;
+  }
+
+  ha-select .mdc-floating-label.mdc-floating-label--float-above {
+    display: none !important;
+  }
+
+  ha-select .mdc-select__anchor {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    height: var(--skycooker-control-height);
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    border-radius: var(--skycooker-control-radius);
+  }
+
+  ha-select .mdc-select__dropdown-icon {
+    margin-right: 4px;
+  }
+
+  ha-select .mdc-select__menu {
+    min-width: 100%;
+    max-width: 300px;
+    border-radius: var(--skycooker-control-radius);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  }
+
+  ha-select .mdc-select__selected-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  ha-select:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  }
+`;
+
 let SkyCookerHaCard = class SkyCookerHaCard extends SubscribeMixin {
     constructor() {
         super(...arguments);
@@ -373,14 +1736,29 @@ let SkyCookerHaCard = class SkyCookerHaCard extends SubscribeMixin {
         this._config = undefined;
         this._selectedMode = 'all'; // По умолчанию показываем все режимы
         this._selectedModeName = ''; // Отслеживаем имя нажатой кнопки режима
-        this._showSelectedTime = false; // Отслеживаем, нужно ли показывать выбранное время
-        this._isStartButtonPressed = false; // Отслеживаем, нажата ли кнопка старта
-        this._showProgress = false; // Флаг для управления отображением прогресса
+        this._additionalExpanded = false;
+        this._configChangedHandler = (ev) => {
+            const customEvent = ev;
+            if (customEvent.detail?.config) {
+                this._config = normalizeConfig(customEvent.detail.config, this.hass);
+                this._initializeSelectedMode();
+                this.requestUpdate();
+            }
+        };
     }
     _initializeSelectedMode() {
-        // Устанавливаем начальное состояние _selectedMode
-        // Если есть избранные режимы, показываем их, иначе - все режимы
-        this._selectedMode = this._hasFavoriteModes() ? 'favorite' : 'all';
+        this._selectedMode = hasFavoriteModes(this.hass, this._config?.favorite_modes_entity)
+            ? 'favorite'
+            : 'all';
+        this._syncSelectedModeFromEntity();
+    }
+    _syncSelectedModeFromEntity() {
+        if (!this._config?.mode_entity || !this.hass)
+            return;
+        const state = getEntityState(this.hass, this._config.mode_entity);
+        if (state && state !== 'N/A' && state !== 'unknown') {
+            this._selectedModeName = state;
+        }
     }
     static async getConfigElement() {
         await Promise.resolve().then(function () { return skycookerHaCardEditor; });
@@ -395,157 +1773,59 @@ let SkyCookerHaCard = class SkyCookerHaCard extends SubscribeMixin {
     }
     static async getStubConfig(hass) {
         return {
-            type: `custom:skycooker-ha-card`,
-            name: 'SkyCooker',
-            icon: 'mdi:stove',
+            ...DEFAULT_CONFIG,
             language: hass.language || 'ru',
-            mode_entity: '',
-            additional_mode_entity: '',
-            cooking_time_hours_entity: '',
-            cooking_time_minutes_entity: '',
-            delayed_start_hours_entity: '',
-            delayed_start_minutes_entity: '',
-            auto_warm_entity: '',
-            start_entity: '',
-            stop_entity: '',
-            start_delayed_entity: '',
-            temperature_entity: '',
-            cooking_temperature_entity: '',
-            remaining_time_entity: '',
-            cooking_time_entity: '',
-            status_entity: '',
-            current_mode_entity: '',
-            current_additional_mode_entity: '',
-            auto_warm_time_entity: '',
-            delayed_launch_time_entity: '',
-            favorite_modes_entity: ''
         };
     }
     setConfig(config) {
-        if (!config) {
-            throw new Error('Configuration is required');
-        }
-        // Приводим конфигурацию к новой структуре
-        const newConfig = {
-            type: config.type || 'custom:skycooker-ha-card',
-            name: config.name || 'SkyCooker',
-            icon: config.icon || 'mdi:stove',
-            language: config.language || this.hass?.language || 'ru',
-            mode_entity: config.mode_entity !== undefined ? config.mode_entity : '',
-            additional_mode_entity: config.additional_mode_entity !== undefined ? config.additional_mode_entity : '',
-            cooking_time_hours_entity: config.cooking_time_hours_entity !== undefined ? config.cooking_time_hours_entity : '',
-            cooking_time_minutes_entity: config.cooking_time_minutes_entity !== undefined ? config.cooking_time_minutes_entity : '',
-            delayed_start_hours_entity: config.delayed_start_hours_entity !== undefined ? config.delayed_start_hours_entity : '',
-            delayed_start_minutes_entity: config.delayed_start_minutes_entity !== undefined ? config.delayed_start_minutes_entity : '',
-            auto_warm_entity: config.auto_warm_entity !== undefined ? config.auto_warm_entity : '',
-            start_entity: config.start_entity !== undefined ? config.start_entity : '',
-            stop_entity: config.stop_entity !== undefined ? config.stop_entity : '',
-            start_delayed_entity: config.start_delayed_entity !== undefined ? config.start_delayed_entity : '',
-            temperature_entity: config.temperature_entity !== undefined ? config.temperature_entity : '',
-            cooking_temperature_entity: config.cooking_temperature_entity !== undefined ? config.cooking_temperature_entity : '',
-            remaining_time_entity: config.remaining_time_entity !== undefined ? config.remaining_time_entity : '',
-            cooking_time_entity: config.cooking_time_entity !== undefined ? config.cooking_time_entity : '',
-            status_entity: config.status_entity !== undefined ? config.status_entity : '',
-            current_mode_entity: config.current_mode_entity !== undefined ? config.current_mode_entity : '',
-            current_additional_mode_entity: config.current_additional_mode_entity !== undefined ? config.current_additional_mode_entity : '',
-            auto_warm_time_entity: config.auto_warm_time_entity !== undefined ? config.auto_warm_time_entity : '',
-            delayed_launch_time_entity: config.delayed_launch_time_entity !== undefined ? config.delayed_launch_time_entity : '',
-            favorite_modes_entity: config.favorite_modes_entity !== undefined ? config.favorite_modes_entity : ''
-        };
-        this._config = newConfig;
+        this._config = normalizeConfig(config, this.hass);
         this._initializeSelectedMode();
     }
     async connectedCallback() {
         super.connectedCallback();
-        // Добавляем слушатель событий для изменений конфигурации из редактора
-        const handleConfigChanged = (ev) => {
-            const customEvent = ev;
-            if (customEvent.detail && customEvent.detail.config) {
-                this._config = customEvent.detail.config;
-                this.requestUpdate();
-            }
-        };
-        this.addEventListener('config-changed', handleConfigChanged);
+        this.addEventListener('config-changed', this._configChangedHandler);
     }
     disconnectedCallback() {
+        this.removeEventListener('config-changed', this._configChangedHandler);
         super.disconnectedCallback();
-        // Удаляем слушатель событий при отключении
-        const handleConfigChanged = (ev) => {
-            const customEvent = ev;
-            if (customEvent.detail && customEvent.detail.config) {
-                this._config = customEvent.detail.config;
-                this.requestUpdate();
-            }
-        };
-        this.removeEventListener('config-changed', handleConfigChanged);
+    }
+    updated(changedProperties) {
+        super.updated?.(changedProperties);
+        if (changedProperties.has('hass') || changedProperties.has('_config')) {
+            this._syncSelectedModeFromEntity();
+        }
     }
     hassSubscribe() {
         if (!this._config || !this.hass)
             return [];
-        const entities = [
-            this._config.mode_entity,
-            this._config.additional_mode_entity,
-            this._config.cooking_time_hours_entity,
-            this._config.cooking_time_minutes_entity,
-            this._config.delayed_start_hours_entity,
-            this._config.delayed_start_minutes_entity,
-            this._config.auto_warm_entity,
-            this._config.start_entity,
-            this._config.stop_entity,
-            this._config.start_delayed_entity,
-            this._config.cooking_temperature_entity,
-            this._config.temperature_entity,
-            this._config.remaining_time_entity,
-            this._config.cooking_time_entity,
-            this._config.status_entity,
-            this._config.current_mode_entity,
-            this._config.current_additional_mode_entity,
-            this._config.auto_warm_time_entity,
-            this._config.delayed_launch_time_entity,
-            this._config.favorite_modes_entity,
-        ].filter(entity => entity);
-        return entities.map(entity => {
-            return () => this.hass?.connection.subscribeEvents((event) => {
-                if (event.data.entity_id === entity) {
-                    this._handleStateChange(event);
-                }
-            }, 'state_changed');
+        const entities = CONFIG_ENTITY_KEYS.map((key) => this._config[key])
+            .filter((entity) => !!entity);
+        return entities.map((entity) => {
+            return () => {
+                const result = this.hass?.connection.subscribeEvents((event) => {
+                    if (event.data.entity_id === entity) {
+                        this._handleStateChange(event.data.entity_id, event.data.new_state);
+                    }
+                }, 'state_changed');
+                if (!result)
+                    return Promise.resolve(() => { });
+                return result instanceof Promise ? result : Promise.resolve(result);
+            };
         });
     }
-    _handleStateChange(event) {
-        // Обновляем интерфейс
-        this.requestUpdate();
-        // Проверяем, изменилось ли состояние сущности, связанной с кнопкой "Старт"
-        if (this._config?.start_entity && event.data.entity_id === this._config.start_entity) {
-            // Сбрасываем состояние кнопки "Старт" при изменении состояния
-            this._isStartButtonPressed = false;
+    _handleStateChange(entityId, newState) {
+        if (entityId === this._config?.mode_entity &&
+            newState?.state &&
+            newState.state !== 'unknown') {
+            this._selectedModeName = newState.state;
         }
+        this.requestUpdate();
     }
     render() {
         if (!this._config || !this.hass) {
             return x ``;
         }
-        // Проверяем, есть ли хотя бы один настроенный entity
-        const hasAnyEntity = this._config.mode_entity ||
-            this._config.additional_mode_entity ||
-            this._config.cooking_time_hours_entity ||
-            this._config.cooking_time_minutes_entity ||
-            this._config.delayed_start_hours_entity ||
-            this._config.delayed_start_minutes_entity ||
-            this._config.auto_warm_entity ||
-            this._config.start_entity ||
-            this._config.stop_entity ||
-            this._config.start_delayed_entity ||
-            this._config.cooking_temperature_entity ||
-            this._config.temperature_entity ||
-            this._config.remaining_time_entity ||
-            this._config.cooking_time_entity ||
-            this._config.status_entity ||
-            this._config.current_mode_entity ||
-            this._config.current_additional_mode_entity ||
-            this._config.auto_warm_time_entity ||
-            this._config.delayed_launch_time_entity ||
-            this._config.favorite_modes_entity;
+        const hasAnyEntity = CONFIG_ENTITY_KEYS.some((key) => this._config[key]?.length > 0);
         if (!hasAnyEntity) {
             return x `
        <ha-card>
@@ -572,456 +1852,36 @@ let SkyCookerHaCard = class SkyCookerHaCard extends SubscribeMixin {
         return this._renderDesign();
     }
     _renderDesign() {
-        // Получаем первую доступную сущность для отображения состояния
-        const firstEntity = this._config.mode_entity ||
-            this._config.cooking_temperature_entity ||
-            this._config.temperature_entity ||
-            this._config.auto_warm_entity ||
-            this._config.start_entity;
-        const firstEntityState = firstEntity ? this.hass?.states[firstEntity] : null;
-        // Use cooking_temperature_entity if available, otherwise fall back to temperature_entity
-        const temperatureEntity = this._config.cooking_temperature_entity || this._config.temperature_entity;
         return x `
  <ha-card class="new-design">
-   <!-- Compact Header -->
-   <div class="new-header">
-     <div class="new-icon">
-       <ha-icon .icon="${this._config.icon || 'mdi:stove'}"></ha-icon>
-     </div>
-     <div class="new-summary">
-       <div class="new-name">
-         ${this._config.name || 'SkyCooker'}
-       </div>
-     </div>
-     <div class="new-status-indicator">
-       ${firstEntityState?.state === 'on' ? x `<ha-icon icon="mdi:circle" style="color: var(--success-color);"></ha-icon>` :
-            firstEntityState?.state === 'off' ? x `<ha-icon icon="mdi:circle" style="color: var(--error-color);"></ha-icon>` : ''}
-     </div>
-   </div>
+   ${renderSkyCookerHeader(this._config, this.hass, this._config.status_entity)}
    
-   <!-- Main Controls Grid -->
    <div class="new-controls-grid">
-      <!-- Temperature and Time -->
-      <div class="new-control-group">
-        ${this._shouldShowTemperature() ? x `
-          <div class="new-control-item">
-            <ha-icon icon="mdi:thermometer" class="new-control-icon"></ha-icon>
-            <div class="new-control-content">
-              <div class="new-control-label">${this._t('temperature')}</div>
-              <div class="new-control-value">${this._getEntityState(temperatureEntity)}°C</div>
-            </div>
-          </div>
-        ` : ''}
-        
-        <!-- Debug: Always show temperature entity info -->
-        ${temperatureEntity ? x `
-          <div style="display: none;" id="main-temperature-debug">
-            Temperature entity configured: ${temperatureEntity}<br>
-            Current temperature state: ${this._getEntityState(temperatureEntity)}
-          </div>
-        ` : ''}
-        
-        <!-- Time Sensors Container with flexible layout -->
-        <div class="new-time-sensors-container">
-          <!-- First row for time sensors -->
-          <div class="new-time-sensors-row">
-            <div class="new-control-item">
-              <div class="new-control-label">${this._t('remaining')}</div>
-              <div class="new-control-icon-value">
-                <ha-icon icon="mdi:timer" class="new-control-icon"></ha-icon>
-                <div class="new-control-value">${this._getEntityState(this._config.remaining_time_entity)}</div>
-              </div>
-            </div>
-            
-            <div class="new-control-item">
-              <div class="new-control-label">${this._t('cooking_time_label')}</div>
-              <div class="new-control-icon-value">
-                <ha-icon icon="mdi:clock" class="new-control-icon"></ha-icon>
-                <div class="new-control-value">${this._getEntityState(this._config.cooking_time_entity)}</div>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Second row for conditional time sensors -->
-          <div class="new-time-sensors-row">
-            <!-- Auto Warm Time Sensor -->
-            ${this._shouldShowAutoWarmTime() ? x `
-              <div class="new-control-item">
-                <div class="new-control-label">${this._t('auto_warm_time')}</div>
-                <div class="new-control-icon-value">
-                  <ha-icon icon="mdi:clock-start" class="new-control-icon"></ha-icon>
-                  <div class="new-control-value">${this._getEntityState(this._config.auto_warm_time_entity)}</div>
-                </div>
-              </div>
-            ` : ''}
-            
-            <!-- Delayed Launch Time Sensor -->
-            ${this._shouldShowDelayedLaunchTime() ? x `
-              <div class="new-control-item">
-                <div class="new-control-label">${this._t('delayed_launch')}</div>
-                <div class="new-control-icon-value">
-                  <ha-icon icon="mdi:timer-sand" class="new-control-icon"></ha-icon>
-                  <div class="new-control-value">${this._getEntityState(this._config.delayed_launch_time_entity)}</div>
-                </div>
-              </div>
-            ` : ''}
-          </div>
-        </div>
-        </div>
-        
-        <!-- Mode Selection -->
-        <div class="new-control-group">
-          <div class="new-mode-selector">
-            <div class="new-mode-label" style="text-align: center;">${this._t('status')}: ${this._getEntityState(this._config.current_mode_entity)} - ${this._getEntityState(this._config.status_entity)}</div>
-            <!-- Selected mode display - always shown -->
-            <div class="new-selected-mode">
-              ${this._t('selected_mode')}: <span class="selected-mode-text">${this._selectedModeName || '-----'}</span>
-            </div>
-            <!-- Selected time display - always shown -->
-            <div class="new-selected-time">
-              ${this._t('selected_time')}: <span class="selected-time-text">${this._getSelectedTime() || '-----'}</span>
-            </div>
-            
-            ${this._config.mode_entity ? x `
-              <!-- Hidden select that syncs with integration -->
-              <ha-select
-                class="new-mode-hidden-select"
-                .value=${this._getEntityState(this._config.mode_entity)}
-                @selected=${(ev) => this._handleSelectChange(this._config.mode_entity, ev)}
-                @closed=${(ev) => ev.stopPropagation()}
-              >
-                ${this._getSelectOptions(this._config.mode_entity)}
-              </ha-select>
-              
-              <!-- Tabs for favorite and all modes -->
-              ${this._hasFavoriteModes() ? x `
-                <div class="new-mode-tabs">
-                  <div class="new-mode-tab ${this._selectedMode === 'favorite' ? 'active' : ''}" @click=${() => this._showFavoriteModes()}>${this._t('favorite_modes')}</div>
-                  <div class="new-mode-tab ${this._selectedMode === 'all' ? 'active' : ''}" @click=${() => this._showAllModes()}>${this._t('all_modes')}</div>
-                </div>
-              ` : ''}
-              
-              <div class="new-mode-buttons">
-                ${this._selectedMode === 'favorite' ?
-            this._getFavoriteModeButtons(this._config.mode_entity) :
-            this._getModeButtons(this._config.mode_entity)}
-              </div>
-            ` : ''}
-          </div>
-        </div>
+      ${renderSkyCookerStatusBlock(this._config, this.hass, this._t.bind(this))}
+      ${renderSkyCookerModeSelector({
+            config: this._config,
+            hass: this.hass,
+            t: this._t.bind(this),
+            selectedMode: this._selectedMode ?? 'all',
+            selectedModeName: this._selectedModeName,
+            onShowFavorite: () => this._showFavoriteModes(),
+            onShowAll: () => this._showAllModes(),
+            onModeClick: (entityId, option) => this._handleModeButtonClick(entityId, option),
+            getSelectedTime: () => this._getSelectedTime(),
+        })}
    </div>
    
-   <!-- Action Buttons in compact layout -->
-   <div class="new-action-buttons">
-     ${this._config.start_entity ? x `
-       <ha-button
-         @click=${() => this._handleButtonPress(this._config.start_entity)}
-         class="new-action-button"
-         .label=${this._t('start')}
-       >
-         <ha-icon icon="mdi:play"></ha-icon>
-       </ha-button>
-     ` : ''}
-     
-     ${this._config.stop_entity ? x `
-       <ha-button
-         @click=${() => this._handleButtonPress(this._config.stop_entity)}
-         class="new-action-button"
-         .label=${this._t('stop')}
-       >
-         <ha-icon icon="mdi:stop"></ha-icon>
-       </ha-button>
-     ` : ''}
-     
-     ${this._config.start_delayed_entity ? x `
-       <ha-button
-         @click=${() => this._handleButtonPress(this._config.start_delayed_entity)}
-         class="new-action-button"
-         .label=${this._t('start_delayed')}
-       >
-         <ha-icon icon="mdi:timer-play"></ha-icon>
-       </ha-button>
-     ` : ''}
-   </div>
+   ${renderSkyCookerActionButtons(this._config, this._t.bind(this), this._handleButtonPress.bind(this))}
    
-   <!-- Additional Controls (collapsible) -->
-<div class="new-additional-controls">
- <div class="new-section-header" @click=${() => this._toggleAdditionalControls()}>
- <ha-icon icon="mdi:cog"></ha-icon>
- <span>${this._t('additional_settings')}</span>
- <ha-icon icon="mdi:chevron-down" class="new-expand-icon"></ha-icon>
-</div>
-     
-     <div class="new-additional-content" style="display: none;">
-       <!-- Auto Warm with Time -->
-       ${this._config.auto_warm_entity ? x `
-         <div class="new-auto-warm-section">
-           <div class="new-auto-warm-header">
-             <ha-icon icon="mdi:heat-wave"></ha-icon>
-             <span class="new-auto-warm-label">${this._t('auto_warm')}</span>
-             <ha-switch
-               .checked=${this._getEntityState(this._config.auto_warm_entity) === 'on'}
-               @change=${(ev) => this._handleSwitchChange(this._config.auto_warm_entity, ev.target.checked)}
-             ></ha-switch>
-           </div>
-         </div>
-       ` : ''}
-       
-       <!-- Temperature Select (hidden secondary option) -->
-       ${this._config.cooking_temperature_entity || this._config.temperature_entity ? x `
-         <div class="new-temperature-section">
-           <div class="new-temperature-header">
-             <ha-icon icon="mdi:thermometer"></ha-icon>
-             <span class="new-temperature-label">${this._t('temperature')}</span>
-           </div>
-           <div class="new-temperature-select-container">
-             <ha-select
-               class="new-temperature-hidden-select"
-               .value=${this._getEntityState(this._config.cooking_temperature_entity || this._config.temperature_entity)}
-               @selected=${(ev) => this._handleSelectChange(this._config.cooking_temperature_entity || this._config.temperature_entity, ev)}
-               @closed=${(ev) => ev.stopPropagation()}
-             >
-               ${this._getTemperatureOptionsWithFallback()}
-             </ha-select>
-           </div>
-         </div>
-       ` : ''}
-       
-       <!-- Debug info for temperature select -->
-       ${this._config.cooking_temperature_entity || this._config.temperature_entity ? x `
-         <div style="display: none;" id="temperature-debug-info">
-           Temperature Entity: ${this._config.cooking_temperature_entity || this._config.temperature_entity}<br>
-           Current State: ${this._getEntityState(this._config.cooking_temperature_entity || this._config.temperature_entity)}<br>
-           Options Count: ${this._getSelectOptions(this._config.cooking_temperature_entity || this._config.temperature_entity).length}
-         </div>
-       ` : ''}
-       
-       <!-- Cooking Time Section -->
-       ${this._config.cooking_time_hours_entity && this._config.cooking_time_minutes_entity ? x `
-         <div class="new-cooking-time-section">
-           <div class="new-cooking-time-header">
-             <ha-icon icon="mdi:clock"></ha-icon>
-             <span class="new-cooking-time-label">${this._t('cooking_time_label')}</span>
-           </div>
-           <div class="new-cooking-time-controls">
-             <ha-select
-               .value=${this._getEntityState(this._config.cooking_time_hours_entity)}
-               @selected=${(ev) => this._handleSelectChange(this._config.cooking_time_hours_entity, ev)}
-               @closed=${(ev) => ev.stopPropagation()}
-             >
-               ${this._getSelectOptions(this._config.cooking_time_hours_entity)}
-             </ha-select>
-             <span class="new-time-unit"> ${this._t('hours')} </span>
-             <ha-select
-               .value=${this._getEntityState(this._config.cooking_time_minutes_entity)}
-               @selected=${(ev) => this._handleSelectChange(this._config.cooking_time_minutes_entity, ev)}
-               @closed=${(ev) => ev.stopPropagation()}
-             >
-               ${this._getSelectOptions(this._config.cooking_time_minutes_entity)}
-             </ha-select>
-             <span class="new-time-unit"> ${this._t('minutes')}</span>
-           </div>
-         </div>
-       ` : ''}
-       
-       <!-- Delayed Start Section -->
-       ${this._config.delayed_start_hours_entity && this._config.delayed_start_minutes_entity ? x `
-         <div class="new-cooking-time-section">
-           <div class="new-cooking-time-header">
-             <ha-icon icon="mdi:timer-sand"></ha-icon>
-             <span class="new-cooking-time-label">${this._t('delayed_start')}</span>
-           </div>
-           <div class="new-cooking-time-controls">
-             <ha-select
-               .value=${this._getEntityState(this._config.delayed_start_hours_entity)}
-               @selected=${(ev) => this._handleSelectChange(this._config.delayed_start_hours_entity, ev)}
-               @closed=${(ev) => ev.stopPropagation()}
-             >
-               ${this._getSelectOptions(this._config.delayed_start_hours_entity)}
-             </ha-select>
-             <span class="new-time-unit"> ${this._t('hours')} </span>
-             <ha-select
-               .value=${this._getEntityState(this._config.delayed_start_minutes_entity)}
-               @selected=${(ev) => this._handleSelectChange(this._config.delayed_start_minutes_entity, ev)}
-               @closed=${(ev) => ev.stopPropagation()}
-             >
-               ${this._getSelectOptions(this._config.delayed_start_minutes_entity)}
-             </ha-select>
-             <span class="new-time-unit"> ${this._t('minutes')}</span>
-           </div>
-         </div>
-       ` : ''}
-          <!-- Delayed Start Time Sensor (removed from additional controls as it's now in main controls) -->
-     </div>
-   </div>
+   ${renderSkyCookerAdditionalControls(this._config, this.hass, this._t.bind(this), this._additionalExpanded, () => {
+            this._additionalExpanded = !this._additionalExpanded;
+        }, this._handleSelectChange.bind(this), this._handleSwitchChange.bind(this))}
    
  </ha-card>
 `;
     }
-    _toggleAdditionalControls() {
-        const content = this.shadowRoot?.querySelector('.new-additional-content');
-        const icon = this.shadowRoot?.querySelector('.new-expand-icon');
-        if (content && icon) {
-            if (content.style.display === 'none') {
-                content.style.display = 'block';
-                icon.setAttribute('icon', 'mdi:chevron-up');
-            }
-            else {
-                content.style.display = 'none';
-                icon.setAttribute('icon', 'mdi:chevron-down');
-            }
-        }
-    }
     _getEntityState(entityId) {
-        if (!entityId || !this.hass)
-            return 'N/A';
-        const state = this.hass.states[entityId]?.state || 'N/A';
-        return state;
-    }
-    _getTemperatureOptionsWithFallback() {
-        // Special method for temperature select with enhanced fallback logic
-        // Use cooking_temperature_entity if available, otherwise fall back to temperature_entity
-        const temperatureEntity = this._config.cooking_temperature_entity || this._config.temperature_entity;
-        if (!temperatureEntity) {
-            return [];
-        }
-        // Debug: Check if hass is available
-        if (!this.hass) {
-            return [];
-        }
-        // Debug: Check if entity exists in hass
-        if (!this.hass.states[temperatureEntity]) {
-            return [];
-        }
-        // Debug: Check entity state
-        const stateObj = this.hass.states[temperatureEntity];
-        // Debug: Check if attributes exist
-        if (!stateObj.attributes) {
-            return [];
-        }
-        // Debug: Check all possible attribute names for temperature options
-        const possibleAttributeNames = ['options', 'temperature_options', 'values', 'list', 'temperature_values', 'temperature_list', 'temp_options', 'temp_values'];
-        // First try the standard method
-        const standardOptions = this._getSelectOptions(temperatureEntity);
-        if (standardOptions && standardOptions.length > 0) {
-            return standardOptions;
-        }
-        // If no options found, try to get state object directly
-        // Use the stateObj we already have
-        // Try different attribute names for temperature options (reuse the same array)
-        for (const attrName of possibleAttributeNames) {
-            if (stateObj.attributes && stateObj.attributes[attrName]) {
-                let options = stateObj.attributes[attrName];
-                // If options is not an array, try to convert it
-                if (!Array.isArray(options)) {
-                    if (typeof options === 'object' && options !== null) {
-                        options = Object.values(options);
-                    }
-                    else if (typeof options === 'string') {
-                        options = options.split(',').map((item) => item.trim());
-                    }
-                }
-                // Filter out invalid options
-                const filteredOptions = options.filter(option => option !== 'unknown' && option !== '' && option !== null && option !== undefined);
-                if (filteredOptions.length > 0) {
-                    return filteredOptions.map((option) => x `
-           <mwc-list-item value=${option}>${option}</mwc-list-item>
-         `);
-                }
-            }
-        }
-        // Try to get temperature options from state object directly
-        if (stateObj.attributes) {
-            const allOptions = [];
-            // Look for any attribute that might contain temperature values
-            for (const [key, value] of Object.entries(stateObj.attributes)) {
-                if (typeof value === 'string' && (value.includes('°C') || value.includes('C') || !isNaN(Number(value)))) {
-                    allOptions.push(value);
-                }
-                else if (Array.isArray(value)) {
-                    const filtered = value.filter(item => typeof item === 'string' && item !== 'unknown' && item !== '');
-                    allOptions.push(...filtered);
-                }
-            }
-            if (allOptions.length > 0) {
-                return allOptions.map((option) => x `
-        <mwc-list-item value=${option}>${option}</mwc-list-item>
-      `);
-            }
-        }
-        // Return default temperature options as last resort
-        const defaultTemperatures = ['50', '60', '70', '80', '90', '100'];
-        return defaultTemperatures.map((temp) => x `
-     <mwc-list-item value=${temp}>${temp}°C</mwc-list-item>
-   `);
-    }
-    _shouldShowTemperature() {
-        // Показывать температуру только если выбран режим "Мультиповар" и идёт процесс
-        const currentMode = this._getEntityState(this._config.current_mode_entity);
-        const status = this._getEntityState(this._config.status_entity);
-        // Проверяем, что режим "Мультиповар" и статус указывает на активный процесс
-        const result = currentMode === 'Мультиповар' &&
-            (status === 'on' || status === 'heating' || status === 'delayed_start');
-        return result;
-    }
-    _calculateProgress() {
-        if (!this._config || !this.hass)
-            return 100;
-        const status = this._getEntityState(this._config.status_entity);
-        const remainingTime = this._getEntityState(this._config.remaining_time_entity);
-        const cookingTime = this._getEntityState(this._config.cooking_time_entity);
-        // Проверяем статус - прогресс отображается только для "Разогрев" и "Готовка" (или "Warming" и "Cooking")
-        const validStatuses = ['Разогрев', 'Готовка', 'Warming', 'Cooking'];
-        if (!validStatuses.includes(status)) {
-            return 100; // Значение по умолчанию
-        }
-        if (remainingTime === 'N/A' || cookingTime === 'N/A')
-            return 100;
-        const remaining = parseFloat(remainingTime);
-        const cooking = parseFloat(cookingTime);
-        if (isNaN(remaining) || isNaN(cooking) || cooking === 0)
-            return 100;
-        // Рассчитываем прогресс: (осталось / общее) * 100, шкала уменьшается
-        const progress = (remaining / cooking) * 100;
-        return Math.round(progress);
-    }
-    _shouldShowProgress() {
-        // Показывать прогресс только для статусов "Разогрев" и "Готовка" (или "Warming" и "Cooking")
-        const status = this._getEntityState(this._config.status_entity);
-        const validStatuses = ['Разогрев', 'Готовка', 'Warming', 'Cooking'];
-        return validStatuses.includes(status) && this._showProgress;
-    }
-    _shouldShowAutoWarmTime() {
-        // Показывать время авторазогрева только для статусов "Подогрев" или "Auto Warm"
-        const status = this._getEntityState(this._config.status_entity);
-        const validStatuses = ['Подогрев', 'Auto Warm'];
-        return validStatuses.includes(status) && !!this._config.auto_warm_time_entity;
-    }
-    _shouldShowDelayedLaunchTime() {
-        // Показывать время отложенного запуска только для статусов "Отложенный старт" или "Delayed Launch"
-        const status = this._getEntityState(this._config.status_entity);
-        const validStatuses = ['Отложенный старт', 'Delayed Launch'];
-        return validStatuses.includes(status) && !!this._config.delayed_launch_time_entity;
-    }
-    _shouldShowSelectedMode() {
-        // Показывать нажатую кнопку режима
-        if (!this._config?.mode_entity || !this.hass || !this._selectedModeName)
-            return false;
-        // Проверяем, что выбранный режим не является режимом ожидания
-        const standbyModes = ['Нет', 'Режим ожидания', 'None', 'Standby Mode', ''];
-        if (standbyModes.includes(this._selectedModeName))
-            return false;
-        // Показываем нажатую кнопку независимо от текущего режима
-        return true;
-    }
-    _shouldShowSelectedTime() {
-        // Показывать выбранное время только если кнопка режима была нажата и есть данные о времени приготовления
-        if (!this._showSelectedTime || !this._config?.cooking_time_hours_entity || !this._config?.cooking_time_minutes_entity || !this.hass)
-            return false;
-        const hours = this._getEntityState(this._config.cooking_time_hours_entity);
-        const minutes = this._getEntityState(this._config.cooking_time_minutes_entity);
-        // Показываем время, если хотя бы одно из значений не равно 'N/A' или пусто
-        return (hours !== 'N/A' && hours !== '') || (minutes !== 'N/A' && minutes !== '');
+        return getEntityState(this.hass, entityId);
     }
     _getSelectedTime() {
         // Получаем данные из скрытых селектов 'Время приготовления'
@@ -1038,193 +1898,6 @@ let SkyCookerHaCard = class SkyCookerHaCard extends SubscribeMixin {
         }
         return `${hours} ${this._t('hours')} ${minutes} ${this._t('minutes')}`;
     }
-    _hasFavoriteModes() {
-        // Проверяем, добавлена ли сущность favorite_modes_entity
-        if (!this._config?.favorite_modes_entity) {
-            return false;
-        }
-        // Если hass недоступен, но сущность задана, возвращаем true
-        if (!this.hass) {
-            return true;
-        }
-        const favoriteModesState = this.hass.states[this._config.favorite_modes_entity];
-        if (!favoriteModesState || !favoriteModesState.attributes) {
-            return false;
-        }
-        // Проверяем наличие атрибута options
-        let favoriteModes = [];
-        // Пробуем получить options из разных возможных атрибутов
-        if (favoriteModesState.attributes.options) {
-            favoriteModes = favoriteModesState.attributes.options;
-        }
-        else if (favoriteModesState.attributes.list) {
-            // Некоторые сущности могут использовать 'list' вместо 'options'
-            favoriteModes = favoriteModesState.attributes.list;
-        }
-        else if (favoriteModesState.attributes.favorite_modes) {
-            // Прямой атрибут с избранными режимами
-            favoriteModes = favoriteModesState.attributes.favorite_modes;
-        }
-        else if (favoriteModesState.attributes.modes) {
-            // Атрибут с режимами
-            favoriteModes = favoriteModesState.attributes.modes;
-        }
-        else if (favoriteModesState.attributes.favoriteModes) {
-            // Прямой атрибут с избранными режимами (с большой буквы)
-            favoriteModes = favoriteModesState.attributes.favoriteModes;
-        }
-        else if (favoriteModesState.attributes.favorites) {
-            // Атрибут с избранными режимами
-            favoriteModes = favoriteModesState.attributes.favorites;
-        }
-        else if (favoriteModesState.attributes.favorite_list) {
-            // Атрибут с избранными режимами
-            favoriteModes = favoriteModesState.attributes.favorite_list;
-        }
-        // Если массив избранных режимов пуст или не содержит валидных элементов, возвращаем false
-        if (!favoriteModes || favoriteModes.length === 0) {
-            return false;
-        }
-        // Фильтруем пустые и невалидные элементы
-        const filteredModes = favoriteModes.filter(mode => mode && typeof mode === 'string' && mode.trim() !== '');
-        // Если после фильтрации нет элементов, возвращаем false
-        if (filteredModes.length === 0) {
-            return false;
-        }
-        // Если сущность задана и опций больше 0, возвращаем true
-        return true;
-    }
-    _getSelectOptions(entityId) {
-        if (!entityId || !this.hass) {
-            return [];
-        }
-        const stateObj = this.hass.states[entityId];
-        if (!stateObj) {
-            return [];
-        }
-        if (!stateObj.attributes) {
-            return [];
-        }
-        if (!stateObj.attributes.options) {
-            // Try to get options from other possible attributes for temperature entities
-            if (stateObj.attributes.temperature_options) {
-                stateObj.attributes.options = stateObj.attributes.temperature_options;
-            }
-            else if (stateObj.attributes.values) {
-                stateObj.attributes.options = stateObj.attributes.values;
-            }
-            else if (stateObj.attributes.list) {
-                stateObj.attributes.options = stateObj.attributes.list;
-            }
-            else {
-                return [];
-            }
-        }
-        // Фильтруем 'unknown' и режимы ожидания из опций для режима готовки
-        const filteredOptions = stateObj.attributes.options.filter((option) => option !== 'unknown' && option !== 'Нет' && option !== 'Режим ожидания' &&
-            option !== 'None' && option !== 'Standby Mode' && option !== '');
-        // Ensure we have valid options
-        if (!filteredOptions || filteredOptions.length === 0) {
-            return [];
-        }
-        return filteredOptions.map((option) => x `
-     <mwc-list-item value=${option}>${option}</mwc-list-item>
-   `);
-    }
-    _getModeButtons(entityId) {
-        if (!entityId || !this.hass)
-            return [];
-        const stateObj = this.hass.states[entityId];
-        if (!stateObj || !stateObj.attributes || !stateObj.attributes.options) {
-            return [];
-        }
-        this._getEntityState(entityId);
-        // Фильтруем ненужные режимы, включая 'unknown'
-        const filteredOptions = stateObj.attributes.options.filter((option) => option !== 'Нет' && option !== 'Режим ожидания' &&
-            option !== 'None' && option !== 'Standby Mode' &&
-            option !== '' && option !== 'unknown');
-        return filteredOptions.map((option) => {
-            switch (option.toLowerCase()) {
-                            }
-            return x `
-        <div class="new-mode-button-wrapper">
-          <ha-button
-            class="new-mode-button"
-            @click=${() => this._handleModeButtonClick(entityId, option)}
-          >
-            <span class="mode-button-text">${option}</span>
-          </ha-button>
-        </div>
-      `;
-        });
-    }
-    _getFavoriteModes() {
-        // Получаем список избранных режимов
-        if (!this._config?.favorite_modes_entity || !this.hass)
-            return [];
-        const favoriteModesState = this.hass.states[this._config.favorite_modes_entity];
-        if (!favoriteModesState || !favoriteModesState.attributes) {
-            return [];
-        }
-        // Пробуем получить options из разных возможных атрибутов
-        let favoriteModes = [];
-        if (favoriteModesState.attributes.options) {
-            favoriteModes = favoriteModesState.attributes.options;
-        }
-        else if (favoriteModesState.attributes.list) {
-            // Некоторые сущности могут использовать 'list' вместо 'options'
-            favoriteModes = favoriteModesState.attributes.list;
-        }
-        else if (favoriteModesState.attributes.favorite_modes) {
-            // Прямой атрибут с избранными режимами
-            favoriteModes = favoriteModesState.attributes.favorite_modes;
-        }
-        else if (favoriteModesState.attributes.modes) {
-            // Атрибут с режимами
-            favoriteModes = favoriteModesState.attributes.modes;
-        }
-        // Дополнительная проверка: если favoriteModes не является массивом, пытаемся преобразовать
-        if (!Array.isArray(favoriteModes)) {
-            if (typeof favoriteModes === 'object' && favoriteModes !== null) {
-                // Если это объект, пытаемся извлечь значения
-                favoriteModes = Object.values(favoriteModes);
-            }
-            else if (typeof favoriteModes === 'string') {
-                // Если это строка, пытаемся разделить её
-                favoriteModes = favoriteModes.split(',').map(item => item.trim());
-            }
-        }
-        // Фильтруем пустые и невалидные элементы
-        const filteredModes = favoriteModes.filter(mode => mode && typeof mode === 'string' && mode.trim() !== '');
-        return filteredModes;
-    }
-    _getFavoriteModeButtons(entityId) {
-        // Получаем кнопки только для избранных режимов
-        const favoriteModes = this._getFavoriteModes();
-        if (favoriteModes.length === 0)
-            return [];
-        // Фильтруем режимы ожидания из избранных режимов
-        const filteredFavoriteModes = favoriteModes.filter((option) => option !== 'Нет' && option !== 'Режим ожидания' &&
-            option !== 'None' && option !== 'Standby Mode' &&
-            option !== '' && option !== 'unknown');
-        if (filteredFavoriteModes.length === 0)
-            return [];
-        this._getEntityState(entityId);
-        return filteredFavoriteModes.map((option) => {
-            switch (option.toLowerCase()) {
-                            }
-            return x `
-        <div class="new-mode-button-wrapper">
-          <ha-button
-            class="new-mode-button"
-            @click=${() => this._handleModeButtonClick(entityId, option)}
-          >
-            <span class="mode-button-text">${option}</span>
-          </ha-button>
-        </div>
-      `;
-        });
-    }
     _showFavoriteModes() {
         // Устанавливаем флаг для отображения избранных режимов
         this._selectedMode = 'favorite';
@@ -1238,27 +1911,12 @@ let SkyCookerHaCard = class SkyCookerHaCard extends SubscribeMixin {
     _handleModeButtonClick(entityId, option) {
         if (!this._config || !this.hass || !entityId)
             return;
-        try {
-            // Устанавливаем выбранный режим как нажатую кнопку
-            this._selectedModeName = option; // Используем новую переменную для имени режима
-            this._showSelectedTime = true; // Показываем выбранное время при нажатии кнопки режима
-            this.requestUpdate();
-            // Находим скрытый селект и программно устанавливаем значение
-            const hiddenSelect = this.shadowRoot?.querySelector('.new-mode-hidden-select');
-            if (hiddenSelect) {
-                hiddenSelect.value = option;
-                // Диспатчим событие selected, чтобы триггернуть обновление
-                const event = new CustomEvent('selected', {
-                    detail: { value: option },
-                    bubbles: true,
-                    composed: true
-                });
-                hiddenSelect.dispatchEvent(event);
-            }
-        }
-        catch (error) {
-            // Тихая обработка ошибок
-        }
+        this._selectedModeName = option;
+        this.requestUpdate();
+        this.hass.callService('select', 'select_option', {
+            entity_id: entityId,
+            option,
+        });
     }
     _handleSelectChange(entityId, ev) {
         if (!this._config || !this.hass || !entityId)
@@ -1290,6 +1948,10 @@ let SkyCookerHaCard = class SkyCookerHaCard extends SubscribeMixin {
         if (entityId === this._config.delayed_start_minutes_entity && value === 'unknown') {
             value = '0';
         }
+        const temperatureEntity = this._config.cooking_temperature_entity || this._config.temperature_entity;
+        if (entityId === temperatureEntity) {
+            value = normalizeTemperatureValue(value);
+        }
         this.hass.callService('select', 'select_option', {
             entity_id: entityId,
             option: value
@@ -1308,23 +1970,14 @@ let SkyCookerHaCard = class SkyCookerHaCard extends SubscribeMixin {
             return;
         // Проверяем, является ли entityId сущностью для кнопки "Стоп"
         if (entityId === this._config.stop_entity) {
-            // Устанавливаем пустую строку для select.skycooker_rmc_m40s_rezhim_gotovki
             const modeEntity = this._config.mode_entity;
             if (modeEntity) {
-                // Убедимся, что устанавливаем пустую строку, а не 'unknown'
-                let optionToSet = this._t('standby_mode');
-                if (this._getEntityState(modeEntity) === 'unknown') {
-                    optionToSet = this._t('standby_mode');
-                }
+                const optionToSet = this._t('standby_mode');
                 this.hass.callService('select', 'select_option', {
                     entity_id: modeEntity,
                     option: optionToSet
                 });
             }
-            // Сбрасываем состояние кнопки "Старт"
-            this._isStartButtonPressed = false;
-            // Скрываем прогресс-бар при нажатии на кнопку "Стоп"
-            this._showProgress = false;
         }
         // Проверяем, является ли entityId сущностью для кнопки "Старт"
         if (entityId === this._config.start_entity) {
@@ -1352,8 +2005,6 @@ let SkyCookerHaCard = class SkyCookerHaCard extends SubscribeMixin {
                     });
                 }
             }
-            // Обновляем состояние кнопки "Старт"
-            this._isStartButtonPressed = false;
             this.requestUpdate();
         }
         this.hass.callService('button', 'press', {
@@ -1361,1008 +2012,7 @@ let SkyCookerHaCard = class SkyCookerHaCard extends SubscribeMixin {
         });
     }
     static get styles() {
-        return i$2 `
-      ha-card {
-        padding: 16px;
-        position: relative;
-        height: 100%;
-        box-sizing: border-box;
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-      }
-      .header {
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        justify-content: center;
-        gap: 20px;
-        padding: 10px 0;
-        border-bottom: 1px solid var(--divider-color);
-      }
-      .header .icon {
-        font-size: 48px;
-        color: var(--primary-color);
-      }
-      .header .summary {
-        display: flex;
-        flex-direction: column;
-      }
-      .header .name {
-        font-size: 24px;
-        font-weight: bold;
-      }
-      .header .state {
-        font-size: 14px;
-        color: var(--secondary-text-color);
-      }
-      .main-status {
-       display: grid;
-       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-       gap: 12px;
-       margin: 10px 0;
-     }
-      .status-item {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 8px;
-        background-color: var(--card-background-color);
-        border-radius: 8px;
-      }
-      .status-label {
-        font-size: 14px;
-        color: var(--secondary-text-color);
-        flex: 1;
-      }
-      .status-value {
-        font-size: 16px;
-        font-weight: bold;
-      }
-      .mode-section {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        padding: 12px;
-        background-color: var(--card-background-color);
-        border-radius: 8px;
-      }
-      .mode-controls {
-        display: flex;
-        gap: 12px;
-        flex-wrap: wrap;
-      }
-      .mode-label {
-        font-size: 16px;
-        font-weight: bold;
-      }
-      .mode-value {
-        font-size: 18px;
-        color: var(--primary-color);
-      }
-      .controls-section {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-      }
-      .control-group {
-        display: flex;
-        gap: 12px;
-        flex-wrap: wrap;
-      }
-      .control-item {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 8px;
-        background-color: var(--card-background-color);
-        border-radius: 8px;
-      }
-      .delayed-start-section {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        padding: 12px;
-        background-color: var(--card-background-color);
-        border-radius: 8px;
-      }
-      .section-title {
-        font-size: 16px;
-        font-weight: bold;
-      }
-      .switches-section {
-        display: flex;
-        gap: 12px;
-        flex-wrap: wrap;
-        padding: 12px;
-        background-color: var(--card-background-color);
-        border-radius: 8px;
-      }
-      .switch-item {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-      .switch-label {
-        font-size: 14px;
-      }
-      .action-buttons {
-        display: flex;
-        gap: 12px;
-        justify-content: center;
-        padding: 12px;
-        background-color: var(--card-background-color);
-        border-radius: 8px;
-      }
-      ha-select {
-        min-width: 120px;
-      }
-      ha-button {
-        --mdc-theme-primary: var(--primary-color);
-        --mdc-theme-secondary: var(--secondary-color);
-      }
-      .progress-section {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        padding: 12px;
-        background-color: var(--card-background-color);
-        border-radius: 8px;
-      }
-      .progress-label {
-        font-size: 16px;
-        font-weight: bold;
-      }
-      .progress-bar {
-        width: 100%;
-        height: 20px;
-        background-color: var(--divider-color);
-        border-radius: 10px;
-        overflow: hidden;
-      }
-      .progress-fill {
-        height: 100%;
-        background-color: var(--primary-color);
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-weight: bold;
-        transition: width 0.3s ease;
-      }
-      .setup-message {
-        padding: 20px;
-        text-align: center;
-        color: var(--secondary-text-color);
-        font-size: 16px;
-      }
-      
-      /* New Design Styles - Mushroom-inspired */
-      ha-card.new-design {
-        padding: 12px;
-        gap: 12px;
-        background: var(--card-background-color);
-        border-radius: var(--ha-card-border-radius, 16px);
-        box-shadow: var(--ha-card-box-shadow, 0px 2px 8px rgba(0,0,0,0.1));
-        overflow: hidden;
-      }
-      
-      .new-header {
-       display: flex;
-       flex-direction: column;
-       align-items: center;
-       gap: 8px;
-       padding: 8px 0;
-       border-bottom: 1px solid var(--divider-color);
-     }
-      
-      .new-icon {
-        font-size: 36px;
-        color: var(--primary-color);
-      }
-      
-      .new-summary {
-       display: flex;
-       flex-direction: column;
-       align-items: center;
-       text-align: center;
-     }
-      
-      .new-name {
-        font-size: 20px;
-        font-weight: bold;
-      }
-      
-      .new-state {
-        font-size: 14px;
-        color: var(--secondary-text-color);
-      }
-      
-      .new-status-indicator {
-        font-size: 20px;
-      }
-      
-      .new-progress {
-        margin: 8px 0;
-      }
-      
-      .new-progress-bar {
-        width: 100%;
-        height: 16px;
-        background-color: var(--divider-color);
-        border-radius: 8px;
-        overflow: hidden;
-      }
-      
-      .new-progress-fill {
-        height: 100%;
-        background-color: var(--primary-color);
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-weight: bold;
-        font-size: 12px;
-        transition: width 0.3s ease;
-      }
-      
-      .new-controls-grid {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-      }
-      
-      .new-control-group {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        padding: 12px;
-        background-color: var(--card-background-color);
-        border-radius: 12px;
-        border: 1px solid var(--divider-color);
-      }
-      
-      .new-control-item {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-      
-      .new-control-icon {
-        font-size: 20px;
-        color: var(--primary-color);
-      }
-      
-      .new-control-content {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-      }
-      
-      .new-control-label {
-        font-size: 15px;
-        color: var(--secondary-text-color);
-      }
-      
-      .new-control-value {
-        font-size: 16px;
-        font-weight: bold;
-      }
-      
-      .new-mode-selector {
-        display: flex;
-        flex-direction: column;
-        gap: 0px;
-        border: none;
-        background: none;
-        padding: 0;
-      }
-      
-      .new-mode-label {
-        font-size: 14px;
-        font-weight: bold;
-      }
-      
-      .new-mode-value {
-        font-size: 16px;
-        color: var(--primary-color);
-        font-weight: bold;
-      }
-      
-      .new-mode-values {
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        gap: 12px;
-        flex-wrap: wrap;
-      }
-      
-      .new-selected-mode {
-        font-size: 15px;
-        color: var(--secondary-text-color);
-        text-align: center;
-        font-family: 'Arial', sans-serif;
-        font-weight: bold;
-      }
-          
-      .selected-mode-text {
-        font-size: 15px;
-        font-weight: bold;
-        color: var(--primary-color);
-        margin-left: 4px;
-        font-family: 'Arial', sans-serif;
-      }
-          
-      .new-selected-time {
-        font-size: 15px;
-        color: var(--secondary-text-color);
-        text-align: center;
-        min-height: 20px; /* Reserve space to prevent layout shift */
-        font-family: 'Arial', sans-serif;
-        font-weight: bold;
-      }
-          
-      .selected-time-text {
-        font-size: 15px;
-        font-weight: bold;
-        color: var(--primary-color);
-        margin-left: 4px;
-        font-family: 'Arial', sans-serif;
-      }
-      
-      .new-mode-select {
-        min-width: 120px;
-        --mdc-theme-primary: var(--primary-color);
-        --mdc-shape-small: 8px;
-        --mdc-menu-min-width: 120px;
-        border-radius: 8px;
-        background-color: var(--card-background-color);
-        height: 36px;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-        border: none;
-      }
-      
-      /* Hidden mode select - completely invisible but functional */
-      .new-mode-hidden-select {
-        display: none;
-        visibility: hidden;
-        opacity: 0;
-        position: absolute;
-        width: 0;
-        height: 0;
-        padding: 0;
-        margin: 0;
-        border: none;
-        pointer-events: none;
-      }
-      
-      /* Mode tabs container */
-      .new-mode-tabs {
-        display: flex;
-        gap: 8px;
-        margin-bottom: 8px;
-        justify-content: center;
-      }
-      
-      .new-mode-tab {
-        padding: 8px 16px;
-        background-color: var(--card-background-color);
-        border-radius: 8px;
-        cursor: pointer;
-        font-size: 14px;
-        font-weight: bold;
-        transition: all 0.2s ease;
-        border: 1px solid var(--divider-color);
-      }
-      
-      .new-mode-tab.active {
-        background-color: var(--primary-color);
-        color: white;
-        border-color: var(--primary-color);
-      }
-      
-      .new-mode-tab:hover {
-        background-color: var(--card-background-color);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
-      
-      /* Mode buttons container */
-      .new-mode-buttons {
-       display: flex;
-       flex-wrap: wrap;
-       gap: 4px;
-       margin-top: 4px;
-     }
-      
-      /* Mode buttons container */
-      .new-mode-buttons {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0px;
-        margin-top: 0px;
-        justify-content: center;
-      }
-      
-      /* Mode button wrapper for consistent sizing */
-      .new-mode-button-wrapper {
-       flex: 1 1 calc(50% - 8px);
-       min-width: 120px;
-       max-width: 200px;
-       display: flex;
-       justify-content: center;
-     }
-
-      /* Mode button styling */
-      .new-mode-button {
-       --mdc-theme-primary: var(--primary-color);
-       --mdc-theme-secondary: var(--secondary-color);
-       border-radius: 8px;
-       padding: 4px 10px;
-       font-size: 14px;
-       background-color: var(--card-background-color);
-       border: none;
-       transition: all 0.2s ease;
-       display: flex;
-       align-items: center;
-       justify-content: center;
-       width: 100%;
-       min-width: 120px;
-       max-width: 200px;
-       white-space: normal;
-       word-wrap: break-word;
-     }
-
-      .new-mode-button .mode-button-text {
-       font-size: 15px;
-       white-space: nowrap;
-       overflow: hidden;
-       text-overflow: ellipsis;
-       max-width: 100%;
-     }
-      
-      /* Mode button hover effect */
-      .new-mode-button:hover {
-        background-color: var(--card-background-color);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
-      
-      .new-mode-select .mdc-select__anchor {
-        border-radius: 12px !important;
-      }
-      
-      .new-action-buttons {
-       display: flex;
-       justify-content: center;
-       gap: 12px;
-       background-color: var(--card-background-color);
-       border-radius: 8px;
-       margin-top: -10px;
-       margin-bottom: -30px;
-     }
-      
-      .new-action-button {
-       --mdc-theme-primary: var(--primary-color);
-       --mdc-theme-secondary: var(--secondary-color);
-       border-radius: 50%;
-       width: 72px;
-       height: 72px;
-       padding: 0;
-       display: flex;
-       align-items: center;
-       justify-content: center;
-       position: relative;
-       background-color: var(--card-background-color);
-       transition: all 0.2s ease;
-     }
-
-        .new-action-button ha-icon {
-          width: 32px;
-          height: 32px;
-          opacity: 1;
-          filter: brightness(1);
-          font-size: 32px;
-        }
-
-      .new-action-button.pressed {
-        background-color: var(--card-background-color);
-        box-shadow: none;
-      }
-
-      .new-action-button.pressed ha-icon {
-        color: var(--primary-color);
-      }
-       
-      
-      .new-action-button::after {
-        content: attr(label);
-        position: absolute;
-        bottom: -24px;
-        width: 100%;
-        text-align: center;
-        font-size: 12px;
-        color: var(--secondary-text-color);
-      }
-      
-      .new-additional-controls {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        padding: 10px;
-        background-color: var(--card-background-color);
-        border-radius: 8px;
-        margin-top: 4px;
-     }
-      
-      .new-section-header {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        cursor: pointer;
-        user-select: none;
-      }
-      
-      .new-section-header ha-icon {
-        font-size: 20px;
-      }
-      
-      .new-section-header span {
-        flex: 1;
-        font-size: 16px;
-        font-weight: 700;
-      }
-      
-      .new-expand-icon {
-        font-size: 20px;
-        transition: transform 0.3s ease;
-      }
-      
-      .new-additional-content {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        padding-top: 8px;
-        border-top: 1px solid var(--divider-color);
-      }
-      
-      .new-switch-item {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-      
-      .new-switch-label {
-        flex: 1;
-        font-size: 14px;
-      }
-      
-      .new-time-controls-section {
-       display: flex;
-       flex-direction: column;
-       gap: 8px;
-       margin-bottom: 12px;
-       padding: 16px 12px 32px 12px;
-       background-color: var(--card-background-color);
-       border-radius: 8px;
-       border: 1px solid var(--divider-color);
-     }
-
-     .new-time-controls-container {
-       display: flex;
-       flex-direction: column;
-       gap: 36px;
-       align-items: center;
-     }
-       
-      .new-time-control {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-      }
-       
-        .new-delayed-start-controls {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-        }
-      
-      .new-delayed-start-time-controls {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-        align-items: center;
-      }
-      
-      .new-time-control ha-select {
-        width: 40%;
-        min-width: 70px;
-        --mdc-theme-primary: var(--primary-color);
-        --mdc-shape-small: 8px;
-        --mdc-menu-min-width: 70px;
-        height: 36px;
-        border-radius: 8px;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-      }
-      
-      .new-time-control ha-select .mdc-select__anchor {
-        border-radius: 12px !important;
-      }
-      
-      .new-time-control span {
-        font-size: 14px;
-        font-weight: bold;
-      }
-       
-      /* Inline time control styling */
-      .new-time-control-inline {
-       display: flex;
-       align-items: center;
-       gap: 8px;
-       flex-wrap: wrap;
-       width: 100%;
-       justify-content: center;
-       margin-top: 20px;
-     }
-       
-      .new-time-control-inline ha-select {
-        width: 25%;
-        min-width: 60px;
-        max-width: 80px;
-        --mdc-theme-primary: var(--primary-color);
-        --mdc-shape-small: 8px;
-        --mdc-menu-min-width: 60px;
-        height: 36px;
-        border-radius: 8px;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-      }
-       
-      /* Ensure inline controls have proper spacing */
-      .new-time-controls, .new-delayed-start-time-controls {
-        width: 100%;
-      }
-       
-      /* Sensor styling for delayed launch and auto warm time */
-      .new-delayed-time-sensor, .new-auto-warm-time-sensor {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 8px 12px;
-        background-color: var(--card-background-color);
-        border-radius: 12px;
-        margin-top: 8px;
-        border: 1px solid var(--divider-color);
-      }
-       
-      .new-sensor-label {
-        font-size: 12px;
-        color: var(--secondary-text-color);
-        flex: 1;
-      }
-       
-      .new-sensor-value {
-        font-size: 14px;
-        font-weight: bold;
-        color: var(--primary-text-color);
-      }
-       
-      /* Improved button styling with tooltips */
-      .new-action-button::before {
-        content: '';
-        position: absolute;
-        top: -5px;
-        left: -5px;
-        right: -5px;
-        bottom: -5px;
-        background: var(--card-background-color);
-        border-radius: 50%;
-        z-index: -1;
-        transition: transform 0.2s ease;
-      }
-      
-       
-      /* Mushroom-inspired card header */
-      .new-header {
-        padding: 12px;
-        background: linear-gradient(135deg, var(--primary-color) 0%, rgba(0,0,0,0) 100%);
-        border-radius: 12px;
-        margin: -12px -12px 12px -12px;
-      }
-       
-      .new-name {
-        color: white;
-        text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
-      }
-       
-      .new-state {
-        color: rgba(255,255,255,0.9);
-      }
-       
-      /* Better spacing for additional controls */
-      .new-additional-content {
-        padding: 12px 0;
-      }
-      
-      /* Compact and modern select styling */
-      ha-select {
-        --mdc-theme-primary: var(--primary-color);
-        --mdc-shape-small: 8px;
-        min-width: 80px;
-        height: 36px;
-        border-radius: 8px;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-        font-size: 14px;
-      }
-      
-      /* Hide select labels for cleaner look */
-      ha-select .mdc-floating-label {
-        display: none !important;
-      }
-      
-      /* Hide floating labels when select is open */
-      ha-select .mdc-floating-label.mdc-floating-label--float-above {
-        display: none !important;
-      }
-      
-      /* Ensure no extra space from hidden labels */
-      ha-select .mdc-select__anchor {
-        padding-top: 0 !important;
-        padding-bottom: 0 !important;
-      }
-      
-      /* Center text in select */
-      ha-select .mdc-select__anchor {
-        height: 36px;
-        display: flex;
-        align-items: center;
-        padding: 0 8px;
-        border-radius: 8px;
-      }
-      
-      /* Style for the dropdown icon */
-      ha-select .mdc-select__dropdown-icon {
-        margin-right: 4px;
-      }
-      
-      /* Style for the select menu */
-      ha-select .mdc-select__menu {
-        min-width: 100%;
-        max-width: 300px;
-        border-radius: 8px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-      }
-      
-      /* Prevent layout shift when select opens */
-      ha-select .mdc-select__selected-text {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-      
-      ha-select:hover {
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-      }
-      
-      /* Auto Warm Section Styling */
-      .new-auto-warm-section {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        padding: 10px;
-        background-color: var(--card-background-color);
-        border-radius: 8px;
-        margin-bottom: 12px;
-      }
-
-      .new-auto-warm-header {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        justify-content: center;
-      }
-
-      .new-auto-warm-label {
-        font-size: 16px;
-        font-weight: 700;
-        text-align: center;
-      }
-      
-      /* Temperature Section Styling */
-      .new-temperature-section {
-       display: flex;
-       flex-direction: column;
-       gap: 12px;
-       padding: 16px 12px 24px 12px;
-       background-color: var(--card-background-color);
-       border-radius: 8px;
-       margin: 12px 0;
-       border: 1px solid var(--divider-color);
-       width: 100%;
-       box-sizing: border-box;
-     }
-
-     .new-temperature-header {
-       display: flex;
-       align-items: center;
-       gap: 8px;
-       justify-content: center;
-       width: 100%;
-       flex-wrap: wrap;
-     }
-
-     .new-temperature-label {
-       font-size: 16px;
-       font-weight: 700;
-       text-align: center;
-     }
-
-     .new-temperature-select-container {
-       display: flex;
-       justify-content: center;
-       padding-left: 0;
-       width: 100%;
-     }
-
-     /* Temperature select styling - should match inline time selects */
-     .new-temperature-hidden-select {
-       width: 100%;
-       min-width: 120px;
-       max-width: 180px;
-       --mdc-theme-primary: var(--primary-color);
-       --mdc-shape-small: 8px;
-       --mdc-menu-min-width: 120px;
-       height: 36px;
-       border-radius: 8px;
-       box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-     }
-
-     /* Cooking Time Section Styling */
-     .new-cooking-time-section {
-       display: flex;
-       flex-direction: column;
-       gap: 12px;
-       padding: 16px 12px 24px 12px;
-       background-color: var(--card-background-color);
-       border-radius: 8px;
-       margin: 12px 0;
-       border: 1px solid var(--divider-color);
-       width: 100%;
-       box-sizing: border-box;
-     }
-
-     .new-cooking-time-header {
-       display: flex;
-       align-items: center;
-       gap: 8px;
-       justify-content: center;
-       width: 100%;
-       flex-wrap: wrap;
-     }
-
-     .new-cooking-time-label {
-       font-size: 16px;
-       font-weight: 700;
-       text-align: center;
-     }
-
-     .new-cooking-time-controls {
-       display: flex;
-       align-items: center;
-       gap: 8px;
-       justify-content: center;
-       padding-left: 0;
-     }
-
-     .new-time-unit {
-       font-size: 14px;
-       font-weight: bold;
-     }
-
-     /* Delayed Start Section Styling */
-     .new-delayed-start-section {
-       display: flex;
-       flex-direction: column;
-       gap: 12px;
-       padding: 16px 12px 24px 12px;
-       background-color: var(--card-background-color);
-       border-radius: 8px;
-       margin: 12px 0;
-       border: 1px solid var(--divider-color);
-       width: 100%;
-       box-sizing: border-box;
-     }
-
-     .new-delayed-start-header {
-       display: flex;
-       align-items: center;
-       gap: 8px;
-       justify-content: center;
-       width: 100%;
-       flex-wrap: wrap;
-     }
-
-     .new-delayed-start-label {
-       font-size: 16px;
-       font-weight: 700;
-       text-align: center;
-     }
-
-     .new-delayed-start-controls {
-       display: flex;
-       align-items: center;
-       gap: 8px;
-       justify-content: center;
-       padding-left: 0;
-       flex-wrap: wrap;
-     }
-      
-      .new-auto-warm-time {
-        padding-left: 30px;
-        font-size: 12px;
-        color: var(--secondary-text-color);
-      }
-      
-      /* Delayed Start Section Improvements */
-      .new-delayed-start-controls {
-        margin-top: 12px;
-      }
-      
-      .new-delayed-start-time-controls {
-        margin-top: 8px;
-      }
-      
-      /* Better spacing for time controls */
-      .new-time-controls {
-        margin-bottom: 12px;
-      }
-        /* Time sensors container styling */
-        .new-time-sensors-container {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-          width: 100%;
-        }
-         
-        .new-time-sensors-row {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 12px;
-          justify-content: center;
-        }
-         
-        /* Single sensor - center it */
-        .new-time-sensors-row:only-child {
-          justify-content: center;
-        }
-         
-        /* Two sensors - display in one row */
-        .new-time-sensors-row:nth-child(1):only-child + .new-time-sensors-row {
-          display: none; /* Hide second row if only one row exists */
-        }
-         
-        /* Three sensors - first two in first row, third centered in second row */
-        .new-time-sensors-row:nth-child(1):has(.new-control-item:nth-child(2)) + .new-time-sensors-row:has(.new-control-item:only-child) {
-          justify-content: center;
-        }
-         
-        /* Four sensors - two in each row */
-        .new-time-sensors-row:nth-child(1):has(.new-control-item:nth-child(2)) + .new-time-sensors-row:has(.new-control-item:nth-child(2)) {
-          justify-content: flex-start;
-        }
-         
-        .new-control-item {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 4px;
-        }
-         
-        .new-control-icon-value {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-      `;
+        return skycookerCardStyles;
     }
 };
 __decorate([
@@ -2379,13 +2029,11 @@ __decorate([
 ], SkyCookerHaCard.prototype, "_selectedModeName", void 0);
 __decorate([
     t()
-], SkyCookerHaCard.prototype, "_showSelectedTime", void 0);
-__decorate([
-    t()
-], SkyCookerHaCard.prototype, "_isStartButtonPressed", void 0);
+], SkyCookerHaCard.prototype, "_additionalExpanded", void 0);
 SkyCookerHaCard = __decorate([
     e$1('skycooker-ha-card')
 ], SkyCookerHaCard);
+console.log('SkyCooker Card version:', CARD_VERSION);
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'skycooker-ha-card',
@@ -2395,37 +2043,25 @@ window.customCards.push({
 });
 
 let SkyCookerHaCardEditor = class SkyCookerHaCardEditor extends s {
-    setConfig(config) {
-        // Используем предоставленную конфигурацию напрямую без слияния с значениями по умолчанию
-        // Это сохраняет все выбранные значения сущностей
-        this._config = config ? { ...config } : {
-            type: 'custom:skycooker-ha-card',
-            name: 'SkyCooker',
-            icon: 'mdi:stove',
-            language: 'ru',
-            mode_entity: '',
-            additional_mode_entity: '',
-            cooking_time_hours_entity: '',
-            cooking_time_minutes_entity: '',
-            delayed_start_hours_entity: '',
-            delayed_start_minutes_entity: '',
-            auto_warm_entity: '',
-            start_entity: '',
-            stop_entity: '',
-            start_delayed_entity: '',
-            temperature_entity: '',
-            cooking_temperature_entity: '',
-            remaining_time_entity: '',
-            cooking_time_entity: '',
-            status_entity: '',
-            current_mode_entity: '',
-            current_additional_mode_entity: '',
-            auto_warm_time_entity: '',
-            delayed_launch_time_entity: '',
-            favorite_modes_entity: ''
+    constructor() {
+        super(...arguments);
+        this._handleAutoFill = () => {
+            const seed = this._config?.mode_entity ||
+                this._config?.status_entity ||
+                this._config?.start_entity;
+            if (!seed || !this.hass)
+                return;
+            const filled = autoFillEntitiesByDevice(this.hass, seed);
+            if (Object.keys(filled).length > 0) {
+                this._updateConfig(filled);
+            }
         };
     }
-    // Геттер для конфигурации, которую может читать Home Assistant
+    setConfig(config) {
+        this._config = config
+            ? { ...normalizeConfig(config, this.hass) }
+            : { ...DEFAULT_CONFIG, language: 'ru' };
+    }
     getConfig() {
         return this._config;
     }
@@ -2434,25 +2070,23 @@ let SkyCookerHaCardEditor = class SkyCookerHaCardEditor extends s {
         this.setConfig(config);
         this.requestUpdate();
     }
-    _dispatchConfigChanged() {
-        const event = new CustomEvent('config-changed', {
+    _updateConfig(updates) {
+        if (!this._config)
+            return;
+        this._config = { ...this._config, ...updates };
+        this.dispatchEvent(new CustomEvent('config-changed', {
             detail: { config: this._config },
             bubbles: true,
             composed: true,
-        });
-        this.dispatchEvent(event);
+        }));
         this.requestUpdate();
-    }
-    _getEntityLabel(entityId) {
-        if (!entityId || !this.hass)
-            return '';
-        return this.hass.states[entityId]?.attributes?.friendly_name || entityId;
     }
     _getEntityOptions(domain) {
         if (!this.hass)
             return [];
-        const entities = Object.keys(this.hass.states).filter(entity_id => entity_id.startsWith(`${domain}.`) &&
-            entity_id.toLowerCase().includes('skycooker'));
+        const entities = Object.keys(this.hass.states)
+            .filter((entity_id) => entity_id.startsWith(`${domain}.`))
+            .sort();
         // Добавляем опцию очистки в начало
         const options = [x `
       <mwc-list-item value="">-- ${this._t('clear_selection')} --</mwc-list-item>
@@ -2489,38 +2123,32 @@ let SkyCookerHaCardEditor = class SkyCookerHaCardEditor extends s {
         <div class="section">
           <div class="section-header">
             <h3>${this._t('entities')}</h3>
+            <ha-button
+              .disabled=${!(this._config.mode_entity ||
+            this._config.status_entity ||
+            this._config.start_entity)}
+              @click=${this._handleAutoFill}
+            >
+              ${this._t('auto_fill')}
+            </ha-button>
           </div>
           <div class="grid">
             <!-- Name -->
             <ha-textfield
               .label="${this._t('name')}"
               .value="${this._config.name || 'SkyCooker'}"
-              @input="${(ev) => {
-            const newConfig = { ...this._config, name: ev.target.value };
-            this._config = newConfig;
-            this.dispatchEvent(new CustomEvent('config-changed', {
-                detail: { config: this._config },
-                bubbles: true,
-                composed: true,
-            }));
-            this.requestUpdate();
-        }}"
+              @input="${(ev) => this._updateConfig({
+            name: ev.target.value,
+        })}"
             ></ha-textfield>
 
             <!-- Icon -->
             <ha-textfield
               .label="${this._t('icon')}"
               .value="${this._config.icon || 'mdi:stove'}"
-              @input="${(ev) => {
-            const newConfig = { ...this._config, icon: ev.target.value };
-            this._config = newConfig;
-            this.dispatchEvent(new CustomEvent('config-changed', {
-                detail: { config: this._config },
-                bubbles: true,
-                composed: true,
-            }));
-            this.requestUpdate();
-        }}"
+              @input="${(ev) => this._updateConfig({
+            icon: ev.target.value,
+        })}"
             ></ha-textfield>
             
           </div>
@@ -2540,11 +2168,13 @@ let SkyCookerHaCardEditor = class SkyCookerHaCardEditor extends s {
                 @selected="${(ev) => {
             ev.stopPropagation();
             ev.preventDefault();
-            const selectedValue = ev.target?.value || ev.detail?.value;
-            this._config = { ...this._config, temperature_entity: selectedValue };
-            this._dispatchConfigChanged();
+            const v = ev.target?.value ?? ev.detail?.value ?? '';
+            this._updateConfig({ temperature_entity: v });
         }}"
-                @closed="${(ev) => { ev.stopPropagation(); ev.preventDefault(); }}"
+                @closed="${(ev) => {
+            ev.stopPropagation();
+            ev.preventDefault();
+        }}"
               >
                 ${this._getEntityOptions('sensor')}
               </ha-select>
@@ -2558,9 +2188,8 @@ let SkyCookerHaCardEditor = class SkyCookerHaCardEditor extends s {
                 @selected="${(ev) => {
             ev.stopPropagation();
             ev.preventDefault();
-            const selectedValue = ev.target?.value || ev.detail?.value;
-            this._config = { ...this._config, remaining_time_entity: selectedValue };
-            this._dispatchConfigChanged();
+            const v = ev.target?.value ?? ev.detail?.value ?? '';
+            this._updateConfig({ remaining_time_entity: v });
         }}"
                 @closed="${(ev) => { ev.stopPropagation(); ev.preventDefault(); }}"
               >
@@ -2576,9 +2205,8 @@ let SkyCookerHaCardEditor = class SkyCookerHaCardEditor extends s {
                 @selected="${(ev) => {
             ev.stopPropagation();
             ev.preventDefault();
-            const selectedValue = ev.target?.value || ev.detail?.value;
-            this._config = { ...this._config, cooking_time_entity: selectedValue };
-            this._dispatchConfigChanged();
+            const v = ev.target?.value ?? ev.detail?.value ?? '';
+            this._updateConfig({ cooking_time_entity: v });
         }}"
                 @closed="${(ev) => { ev.stopPropagation(); ev.preventDefault(); }}"
               >
@@ -2594,9 +2222,8 @@ let SkyCookerHaCardEditor = class SkyCookerHaCardEditor extends s {
                 @selected="${(ev) => {
             ev.stopPropagation();
             ev.preventDefault();
-            const selectedValue = ev.target?.value || ev.detail?.value;
-            this._config = { ...this._config, status_entity: selectedValue };
-            this._dispatchConfigChanged();
+            const v = ev.target?.value ?? ev.detail?.value ?? '';
+            this._updateConfig({ status_entity: v });
         }}"
                 @closed="${(ev) => { ev.stopPropagation(); ev.preventDefault(); }}"
               >
@@ -2612,9 +2239,8 @@ let SkyCookerHaCardEditor = class SkyCookerHaCardEditor extends s {
                 @selected="${(ev) => {
             ev.stopPropagation();
             ev.preventDefault();
-            const selectedValue = ev.target?.value || ev.detail?.value;
-            this._config = { ...this._config, current_mode_entity: selectedValue };
-            this._dispatchConfigChanged();
+            const v = ev.target?.value ?? ev.detail?.value ?? '';
+            this._updateConfig({ current_mode_entity: v });
         }}"
                 @closed="${(ev) => { ev.stopPropagation(); ev.preventDefault(); }}"
               >
@@ -2630,9 +2256,8 @@ let SkyCookerHaCardEditor = class SkyCookerHaCardEditor extends s {
                 @selected="${(ev) => {
             ev.stopPropagation();
             ev.preventDefault();
-            const selectedValue = ev.target?.value || ev.detail?.value;
-            this._config = { ...this._config, auto_warm_time_entity: selectedValue };
-            this._dispatchConfigChanged();
+            const v = ev.target?.value ?? ev.detail?.value ?? '';
+            this._updateConfig({ auto_warm_time_entity: v });
         }}"
                 @closed="${(ev) => { ev.stopPropagation(); ev.preventDefault(); }}"
               >
@@ -2648,9 +2273,8 @@ let SkyCookerHaCardEditor = class SkyCookerHaCardEditor extends s {
                 @selected="${(ev) => {
             ev.stopPropagation();
             ev.preventDefault();
-            const selectedValue = ev.target?.value || ev.detail?.value;
-            this._config = { ...this._config, delayed_launch_time_entity: selectedValue };
-            this._dispatchConfigChanged();
+            const v = ev.target?.value ?? ev.detail?.value ?? '';
+            this._updateConfig({ delayed_launch_time_entity: v });
         }}"
                 @closed="${(ev) => { ev.stopPropagation(); ev.preventDefault(); }}"
               >
@@ -2674,9 +2298,8 @@ let SkyCookerHaCardEditor = class SkyCookerHaCardEditor extends s {
                 @selected="${(ev) => {
             ev.stopPropagation();
             ev.preventDefault();
-            const selectedValue = ev.target?.value || ev.detail?.value;
-            this._config = { ...this._config, auto_warm_entity: selectedValue };
-            this._dispatchConfigChanged();
+            const v = ev.target?.value ?? ev.detail?.value ?? '';
+            this._updateConfig({ auto_warm_entity: v });
         }}"
                 @closed="${(ev) => { ev.stopPropagation(); ev.preventDefault(); }}"
               >
@@ -2700,9 +2323,8 @@ let SkyCookerHaCardEditor = class SkyCookerHaCardEditor extends s {
                 @selected="${(ev) => {
             ev.stopPropagation();
             ev.preventDefault();
-            const selectedValue = ev.target?.value || ev.detail?.value;
-            this._config = { ...this._config, mode_entity: selectedValue };
-            this._dispatchConfigChanged();
+            const v = ev.target?.value ?? ev.detail?.value ?? '';
+            this._updateConfig({ mode_entity: v });
         }}"
                 @closed="${(ev) => { ev.stopPropagation(); ev.preventDefault(); }}"
               >
@@ -2718,9 +2340,8 @@ let SkyCookerHaCardEditor = class SkyCookerHaCardEditor extends s {
                 @selected="${(ev) => {
             ev.stopPropagation();
             ev.preventDefault();
-            const selectedValue = ev.target?.value || ev.detail?.value;
-            this._config = { ...this._config, additional_mode_entity: selectedValue };
-            this._dispatchConfigChanged();
+            const v = ev.target?.value ?? ev.detail?.value ?? '';
+            this._updateConfig({ additional_mode_entity: v });
         }}"
                 @closed="${(ev) => { ev.stopPropagation(); ev.preventDefault(); }}"
               >
@@ -2736,9 +2357,8 @@ let SkyCookerHaCardEditor = class SkyCookerHaCardEditor extends s {
                 @selected="${(ev) => {
             ev.stopPropagation();
             ev.preventDefault();
-            const selectedValue = ev.target?.value || ev.detail?.value;
-            this._config = { ...this._config, cooking_time_hours_entity: selectedValue };
-            this._dispatchConfigChanged();
+            const v = ev.target?.value ?? ev.detail?.value ?? '';
+            this._updateConfig({ cooking_time_hours_entity: v });
         }}"
                 @closed="${(ev) => { ev.stopPropagation(); ev.preventDefault(); }}"
               >
@@ -2754,9 +2374,8 @@ let SkyCookerHaCardEditor = class SkyCookerHaCardEditor extends s {
                 @selected="${(ev) => {
             ev.stopPropagation();
             ev.preventDefault();
-            const selectedValue = ev.target?.value || ev.detail?.value;
-            this._config = { ...this._config, cooking_time_minutes_entity: selectedValue };
-            this._dispatchConfigChanged();
+            const v = ev.target?.value ?? ev.detail?.value ?? '';
+            this._updateConfig({ cooking_time_minutes_entity: v });
         }}"
                 @closed="${(ev) => { ev.stopPropagation(); ev.preventDefault(); }}"
               >
@@ -2772,9 +2391,8 @@ let SkyCookerHaCardEditor = class SkyCookerHaCardEditor extends s {
                 @selected="${(ev) => {
             ev.stopPropagation();
             ev.preventDefault();
-            const selectedValue = ev.target?.value || ev.detail?.value;
-            this._config = { ...this._config, delayed_start_hours_entity: selectedValue };
-            this._dispatchConfigChanged();
+            const v = ev.target?.value ?? ev.detail?.value ?? '';
+            this._updateConfig({ delayed_start_hours_entity: v });
         }}"
                 @closed="${(ev) => { ev.stopPropagation(); ev.preventDefault(); }}"
               >
@@ -2790,9 +2408,8 @@ let SkyCookerHaCardEditor = class SkyCookerHaCardEditor extends s {
                 @selected="${(ev) => {
             ev.stopPropagation();
             ev.preventDefault();
-            const selectedValue = ev.target?.value || ev.detail?.value;
-            this._config = { ...this._config, delayed_start_minutes_entity: selectedValue };
-            this._dispatchConfigChanged();
+            const v = ev.target?.value ?? ev.detail?.value ?? '';
+            this._updateConfig({ delayed_start_minutes_entity: v });
         }}"
                 @closed="${(ev) => { ev.stopPropagation(); ev.preventDefault(); }}"
               >
@@ -2808,9 +2425,8 @@ let SkyCookerHaCardEditor = class SkyCookerHaCardEditor extends s {
                 @selected="${(ev) => {
             ev.stopPropagation();
             ev.preventDefault();
-            const selectedValue = ev.target?.value || ev.detail?.value;
-            this._config = { ...this._config, favorite_modes_entity: selectedValue };
-            this._dispatchConfigChanged();
+            const v = ev.target?.value ?? ev.detail?.value ?? '';
+            this._updateConfig({ favorite_modes_entity: v });
         }}"
                 @closed="${(ev) => { ev.stopPropagation(); ev.preventDefault(); }}"
               >
@@ -2826,9 +2442,8 @@ let SkyCookerHaCardEditor = class SkyCookerHaCardEditor extends s {
                 @selected="${(ev) => {
             ev.stopPropagation();
             ev.preventDefault();
-            const selectedValue = ev.target?.value || ev.detail?.value;
-            this._config = { ...this._config, cooking_temperature_entity: selectedValue };
-            this._dispatchConfigChanged();
+            const v = ev.target?.value ?? ev.detail?.value ?? '';
+            this._updateConfig({ cooking_temperature_entity: v });
         }}"
                 @closed="${(ev) => { ev.stopPropagation(); ev.preventDefault(); }}"
               >
@@ -2852,9 +2467,8 @@ let SkyCookerHaCardEditor = class SkyCookerHaCardEditor extends s {
                 @selected="${(ev) => {
             ev.stopPropagation();
             ev.preventDefault();
-            const selectedValue = ev.target?.value || ev.detail?.value;
-            this._config = { ...this._config, start_entity: selectedValue };
-            this._dispatchConfigChanged();
+            const v = ev.target?.value ?? ev.detail?.value ?? '';
+            this._updateConfig({ start_entity: v });
         }}"
                 @closed="${(ev) => { ev.stopPropagation(); ev.preventDefault(); }}"
               >
@@ -2870,9 +2484,8 @@ let SkyCookerHaCardEditor = class SkyCookerHaCardEditor extends s {
                 @selected="${(ev) => {
             ev.stopPropagation();
             ev.preventDefault();
-            const selectedValue = ev.target?.value || ev.detail?.value;
-            this._config = { ...this._config, stop_entity: selectedValue };
-            this._dispatchConfigChanged();
+            const v = ev.target?.value ?? ev.detail?.value ?? '';
+            this._updateConfig({ stop_entity: v });
         }}"
                 @closed="${(ev) => { ev.stopPropagation(); ev.preventDefault(); }}"
               >
@@ -2888,9 +2501,8 @@ let SkyCookerHaCardEditor = class SkyCookerHaCardEditor extends s {
                 @selected="${(ev) => {
             ev.stopPropagation();
             ev.preventDefault();
-            const selectedValue = ev.target?.value || ev.detail?.value;
-            this._config = { ...this._config, start_delayed_entity: selectedValue };
-            this._dispatchConfigChanged();
+            const v = ev.target?.value ?? ev.detail?.value ?? '';
+            this._updateConfig({ start_delayed_entity: v });
         }}"
                 @closed="${(ev) => { ev.stopPropagation(); ev.preventDefault(); }}"
               >

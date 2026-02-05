@@ -1,3 +1,4 @@
 // Константы для skycooker-ha-card
 
-export const CARD_VERSION = "0.1.0";
+// Keep in sync with package.json version
+export const CARD_VERSION = "1.1.2";
