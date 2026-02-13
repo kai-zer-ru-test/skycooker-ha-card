@@ -118,6 +118,16 @@ export class SkyCookerHaCardEditor extends LitElement implements LovelaceCardEdi
               ${this._t('auto_fill')}
             </ha-button>
           </div>
+          <div class="design-toggle-row">
+            <ha-switch
+              .checked=${this._config.use_new_design ?? false}
+              @change=${(ev: Event) =>
+                this._updateConfig({
+                  use_new_design: (ev.target as HTMLInputElement).checked,
+                })}
+            ></ha-switch>
+            <span class="design-toggle-label">${this._t('use_new_design')}</span>
+          </div>
           <div class="grid">
             <!-- Name -->
             <ha-textfield
@@ -570,6 +580,18 @@ export class SkyCookerHaCardEditor extends LitElement implements LovelaceCardEdi
 
       ha-textfield {
         width: 100%;
+      }
+
+      .design-toggle-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 15px;
+      }
+
+      .design-toggle-label {
+        font-size: 14px;
+        color: var(--primary-text-color);
       }
     `;
   }

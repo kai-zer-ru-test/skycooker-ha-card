@@ -69,6 +69,14 @@ export const skycookerCardStyles: CSSResult = css`
     overflow: hidden;
   }
 
+  ha-card.new-design.new-design-v2 {
+    gap: 14px;
+  }
+
+  .new-design-v2 .new-controls-grid {
+    margin-top: 2px;
+  }
+
   .new-header {
     display: flex;
     flex-direction: column;
@@ -113,6 +121,12 @@ export const skycookerCardStyles: CSSResult = css`
     font-weight: 600;
     font-family: inherit;
     color: var(--primary-text-color);
+  }
+
+  .new-header-status-text {
+    font-size: var(--card-secondary-font-size, 12px);
+    color: var(--secondary-text-color);
+    margin-top: 4px;
   }
 
   .new-state {

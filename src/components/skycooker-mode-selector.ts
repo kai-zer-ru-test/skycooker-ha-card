@@ -19,6 +19,8 @@ export interface ModeSelectorParams {
   onShowAll: () => void;
   onModeClick: (entityId: string, option: string) => void;
   getSelectedTime: () => string;
+  /** When false, hide the "current_mode | status" line (used in new design). Default true. */
+  showCurrentStatusLine?: boolean;
 }
 
 export function renderSkyCookerModeSelector(params: ModeSelectorParams): TemplateResult {
@@ -32,6 +34,7 @@ export function renderSkyCookerModeSelector(params: ModeSelectorParams): Templat
     onShowAll,
     onModeClick,
     getSelectedTime,
+    showCurrentStatusLine = true,
   } = params;
 
   const getEntityStateLocal = (entityId: string) =>
@@ -70,10 +73,14 @@ export function renderSkyCookerModeSelector(params: ModeSelectorParams): Templat
   return html`
     <div class="new-control-group">
       <div class="new-mode-selector">
-        <div class="new-mode-label" style="text-align: center;">
-          ${t('current_mode')}: ${getEntityStateLocal(config.current_mode_entity)} |
-          ${t('status')}: ${getEntityStateLocal(config.status_entity)}
-        </div>
+        ${showCurrentStatusLine
+          ? html`
+              <div class="new-mode-label" style="text-align: center;">
+                ${t('current_mode')}: ${getEntityStateLocal(config.current_mode_entity)} |
+                ${t('status')}: ${getEntityStateLocal(config.status_entity)}
+              </div>
+            `
+          : ''}
         <div class="new-selected-mode">
           ${t('selected_mode')}: <span class="selected-mode-text">${selectedModeName || '-----'}</span>
         </div>

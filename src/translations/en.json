@@ -45,4 +45,6 @@
  "favorite_modes": "Favorite Programs",
  "all_modes": "All Programs",
  "standby_mode": "Standby Mode",
-  "auto_fill": "Auto-fill by device"}
+  "auto_fill": "Auto-fill by device",
+  "use_new_design": "Use new design"
+}

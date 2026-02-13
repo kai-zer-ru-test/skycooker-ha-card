@@ -22,6 +22,7 @@ import { renderSkyCookerStatusBlock } from './components/skycooker-status-block'
 import { renderSkyCookerAdditionalControls } from './components/skycooker-additional-controls';
 import { renderSkyCookerModeSelector } from './components/skycooker-mode-selector';
 import { skycookerCardStyles } from './skycooker-ha-card-styles';
+import { isStatusOff } from './status-utils';
 
 @customElement('skycooker-ha-card')
 export class SkyCookerHaCard extends SubscribeMixin {
@@ -177,60 +178,125 @@ export class SkyCookerHaCard extends SubscribeMixin {
      `;
    }
  
-   // Используем компактный дизайн
-   return this._renderDesign();
- }
+   if (this._config.use_new_design) {
+     return this._renderNewDesign();
+   }
+   return this._renderLegacyDesign();
+  }
 
-
- private _renderDesign(): TemplateResult {
-   return html`
- <ha-card class="new-design">
-   ${renderSkyCookerHeader(
-     this._config,
-     this.hass,
-     this._config.status_entity
-   )}
-   
-   <div class="new-controls-grid">
-      ${renderSkyCookerStatusBlock(
-        this._config,
-        this.hass,
-        this._t.bind(this)
-      )}
-      ${renderSkyCookerModeSelector({
-        config: this._config,
-        hass: this.hass,
-        t: this._t.bind(this),
-        selectedMode: this._selectedMode ?? 'all',
-        selectedModeName: this._selectedModeName,
-        onShowFavorite: () => this._showFavoriteModes(),
-        onShowAll: () => this._showAllModes(),
-        onModeClick: (entityId, option) => this._handleModeButtonClick(entityId, option),
-        getSelectedTime: () => this._getSelectedTime(),
-      })}
-   </div>
-   
-   ${renderSkyCookerActionButtons(
-     this._config,
-     this._t.bind(this),
-     this._handleButtonPress.bind(this)
-   )}
-   
-   ${renderSkyCookerAdditionalControls(
-     this._config,
-     this.hass,
-     this._t.bind(this),
-     this._additionalExpanded,
-     () => {
-       this._additionalExpanded = !this._additionalExpanded;
-     },
-     this._handleSelectChange.bind(this),
-     this._handleSwitchChange.bind(this)
-   )}
-   
- </ha-card>
+  private _renderLegacyDesign(): TemplateResult {
+    return html`
+  <ha-card class="new-design">
+    ${renderSkyCookerHeader(
+      this._config!,
+      this.hass,
+      this._config!.status_entity
+    )}
+    
+    <div class="new-controls-grid">
+       ${renderSkyCookerStatusBlock(
+         this._config!,
+         this.hass,
+         this._t.bind(this)
+       )}
+       ${renderSkyCookerModeSelector({
+         config: this._config!,
+         hass: this.hass,
+         t: this._t.bind(this),
+         selectedMode: this._selectedMode ?? 'all',
+         selectedModeName: this._selectedModeName,
+         onShowFavorite: () => this._showFavoriteModes(),
+         onShowAll: () => this._showAllModes(),
+         onModeClick: (entityId, option) => this._handleModeButtonClick(entityId, option),
+         getSelectedTime: () => this._getSelectedTime(),
+         showCurrentStatusLine: true,
+       })}
+    </div>
+    
+    ${renderSkyCookerActionButtons(
+      this._config!,
+      this._t.bind(this),
+      this._handleButtonPress.bind(this)
+    )}
+    
+    ${renderSkyCookerAdditionalControls(
+      this._config!,
+      this.hass,
+      this._t.bind(this),
+      this._additionalExpanded,
+      () => {
+        this._additionalExpanded = !this._additionalExpanded;
+      },
+      this._handleSelectChange.bind(this),
+      this._handleSwitchChange.bind(this)
+    )}
+    
+  </ha-card>
 `;
- }
+  }
+
+  private _renderNewDesign(): TemplateResult {
+    return html`
+  <ha-card class="new-design new-design-v2">
+    ${renderSkyCookerHeader(
+      this._config!,
+      this.hass,
+      this._config!.status_entity,
+      true
+    )}
+    
+    ${this._renderNewDesignStateBlock()}
+    
+    <div class="new-controls-grid">
+       ${renderSkyCookerModeSelector({
+         config: this._config!,
+         hass: this.hass,
+         t: this._t.bind(this),
+         selectedMode: this._selectedMode ?? 'all',
+         selectedModeName: this._selectedModeName,
+         onShowFavorite: () => this._showFavoriteModes(),
+         onShowAll: () => this._showAllModes(),
+         onModeClick: (entityId, option) => this._handleModeButtonClick(entityId, option),
+         getSelectedTime: () => this._getSelectedTime(),
+         showCurrentStatusLine: false,
+       })}
+    </div>
+    
+    ${renderSkyCookerActionButtons(
+      this._config!,
+      this._t.bind(this),
+      this._handleButtonPress.bind(this)
+    )}
+    
+    ${renderSkyCookerAdditionalControls(
+      this._config!,
+      this.hass,
+      this._t.bind(this),
+      this._additionalExpanded,
+      () => {
+        this._additionalExpanded = !this._additionalExpanded;
+      },
+      this._handleSelectChange.bind(this),
+      this._handleSwitchChange.bind(this)
+    )}
+    
+  </ha-card>
+`;
+  }
+
+  private _renderNewDesignStateBlock(): TemplateResult {
+    const statusState = this._config?.status_entity && this.hass
+      ? (this.hass.states[this._config.status_entity]?.state ?? '')
+      : '';
+    if (isStatusOff(statusState)) {
+      return html``;
+    }
+    return renderSkyCookerStatusBlock(
+      this._config!,
+      this.hass,
+      this._t.bind(this)
+    );
+  }
 
   private _getEntityState(entityId: string): string {
     return getEntityState(this.hass, entityId);
